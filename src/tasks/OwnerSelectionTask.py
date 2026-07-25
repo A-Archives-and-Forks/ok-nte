@@ -131,15 +131,7 @@ class OwnerSelectionTask(NTEOneTimeTask, RecordTask):
                 == 0
             ):
                 return
-        success_count = 0
-        failed_count = 0
-        round_index = 1
-        rounds = self.configured_rounds(default=0)
-
-        self.info_set("成功次数", "0")
-        self.info_set("失败次数", 0)
-        self.info_set("失败原因", None)
-        self.log_info(f"开始店长特供，共 {self.rounds_total_text(rounds)} 轮")
+        self.start_rounds()
 
         self.wait_until(
             lambda: not self.is_in_team(),
@@ -149,30 +141,13 @@ class OwnerSelectionTask(NTEOneTimeTask, RecordTask):
             raise_if_not_found=True,
         )
 
-        while self.should_run_round(round_index, rounds):
-            self.info_set("轮次", self.rounds_info_text(round_index, rounds))
-            self.log_info(f"开始第 {round_index} 轮")
+        while self.begin_round():
+            if self.run_round():
+                self.add_success()
 
-            if self.run_round(round_index):
-                success_count += 1
-                self.info_set("成功次数", success_count)
-            else:
-                failed_count += 1
-                self.info_set("失败次数", failed_count)
-                self.log_error(f"第 {round_index} 轮失败")
+        self.finish_rounds()
 
-            rounds = self.configured_rounds(default=0)
-            round_index += 1
-
-            self.info_set("成功次数", success_count)
-            self.info_set("失败次数", failed_count)
-
-        self.log_info(
-            f"店长特供结束，成功 {success_count}/{self.rounds_total_text(rounds)}",
-            notify=True,
-        )
-
-    def run_round(self, round_index: int) -> bool:
+    def run_round(self) -> bool:
         # 步骤1：按 F 进入店长特供页面
         self.info_set("当前阶段", "进入店长特供")
         self.wait_until(
@@ -192,7 +167,7 @@ class OwnerSelectionTask(NTEOneTimeTask, RecordTask):
         # 步骤3：循环点击 + OCR 检测营业额
         self.info_set("当前阶段", "营业中")
         if not self.run_until_target_revenue():
-            return self._fail_round(round_index, "shop_revenue_timeout", "营业额未在超时内达标")
+            return self._fail_round("shop_revenue_timeout", "营业额未在超时内达标")
 
         # 步骤4：关闭结果界面 → 结算确认
         self.info_set("当前阶段", "结算确认")
@@ -230,10 +205,9 @@ class OwnerSelectionTask(NTEOneTimeTask, RecordTask):
         box = self.box_of_screen(0.9484, 0.1660, 0.9555, 0.1771, name="star")
         return self.calculate_color_percentage(yellow_star_color, box) > 0.1
 
-    def _fail_round(self, round_index: int, reason: str, message: str) -> bool:
-        self.info_set("失败原因", message)
-        self.screenshot(f"{reason}_{round_index}")
-        self.log_error(message)
+    def _fail_round(self, reason: str, message: str) -> bool:
+        self.screenshot(f"{reason}_{self.current_round}")
+        self.add_failed(message)
         return False
 
 

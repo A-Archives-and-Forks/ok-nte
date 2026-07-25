@@ -4,10 +4,16 @@ from unittest.mock import patch
 from ok import WaitFailedException
 
 from src.flow import Flow, FlowReplan
+from src.tasks.BaseNTETask import RoundState
 from src.tasks.FishingTask import FishingSession, FishingTask, RestockPhase
 
 
 class TestFishingFlow(unittest.TestCase):
+    @staticmethod
+    def _set_round_state(task, total=0, index=1, success_count=0, failed_count=0):
+        task._round_state = RoundState(total, index, success_count, failed_count)
+        task.config = {task.CONF_ROUNDS: total}
+
     def _task_with_flow(self, state):
         task = object.__new__(FishingTask)
         task.flow = Flow()
@@ -116,10 +122,7 @@ class TestFishingFlow(unittest.TestCase):
 
     def test_restock_return_context_does_not_reopen_the_fish_hold(self):
         task = object.__new__(FishingTask)
-        session = FishingSession(
-            target_rounds=1,
-            restock_phase=RestockPhase.OPEN_BAIT_MENU,
-        )
+        session = FishingSession(restock_phase=RestockPhase.OPEN_BAIT_MENU)
         task._fishing_session = session
         task._return_to_fishing_ready = lambda: "returning"
 
@@ -127,13 +130,12 @@ class TestFishingFlow(unittest.TestCase):
 
     def test_ready_opens_bait_interface_after_sale_returns_to_ready(self):
         task = object.__new__(FishingTask)
-        session = FishingSession(
-            target_rounds=1,
-            restock_phase=RestockPhase.OPEN_BAIT_MENU,
-        )
+        session = FishingSession(restock_phase=RestockPhase.OPEN_BAIT_MENU)
         task._fishing_session = session
+        self._set_round_state(task, total=1, index=0)
         task.info_get = lambda _key: None
         task.info_set = lambda _key, _value: None
+        task.log_info = lambda _message: None
         task._set_stage = lambda _stage: None
         calls = []
         task._open_bait_interface = lambda: calls.append("opening bait")
@@ -144,8 +146,9 @@ class TestFishingFlow(unittest.TestCase):
 
     def test_control_interruption_tracks_the_round_without_changing_pending_result_semantics(self):
         task = object.__new__(FishingTask)
-        session = FishingSession(target_rounds=1, round_index=3)
+        session = FishingSession()
         task._fishing_session = session
+        self._set_round_state(task, index=3)
         task._set_stage = lambda _stage: None
         task.log_info = lambda _message: None
 
@@ -163,8 +166,9 @@ class TestFishingFlow(unittest.TestCase):
 
     def test_control_failure_does_not_create_a_pending_result(self):
         task = object.__new__(FishingTask)
-        session = FishingSession(target_rounds=1, round_index=3, cast_attempts=2)
+        session = FishingSession(cast_attempts=2)
         task._fishing_session = session
+        self._set_round_state(task, index=3)
         task._set_stage = lambda _stage: None
         task.log_info = lambda _message: None
         task.control_until_finish = lambda: (_ for _ in ()).throw(WaitFailedException())
@@ -178,8 +182,9 @@ class TestFishingFlow(unittest.TestCase):
 
     def test_completed_control_resets_recovery_attempts(self):
         task = object.__new__(FishingTask)
-        session = FishingSession(target_rounds=1, round_index=3, recovery_attempts=2)
+        session = FishingSession(recovery_attempts=2)
         task._fishing_session = session
+        self._set_round_state(task, index=3)
         task._set_stage = lambda _stage: None
         task.log_info = lambda _message: None
         task.control_until_finish = lambda: None
@@ -191,22 +196,24 @@ class TestFishingFlow(unittest.TestCase):
 
     def test_waiting_bite_keeps_the_previous_result_pending(self):
         task = object.__new__(FishingTask)
-        session = FishingSession(target_rounds=0, awaiting_result_round=5)
+        session = FishingSession(awaiting_result_round=5)
         task._fishing_session = session
+        self._set_round_state(task, index=5)
         task._set_stage = lambda _stage: None
         sent_keys = []
         task.send_key = lambda key, **_kwargs: sent_keys.append(key)
 
         task._on_waiting_bite()
 
-        self.assertEqual(session.failed_count, 0)
+        self.assertEqual(task._round_state.failed_count, 0)
         self.assertEqual(session.awaiting_result_round, 5)
         self.assertEqual(sent_keys, ["f"])
 
     def test_next_control_records_a_missing_previous_result(self):
         task = object.__new__(FishingTask)
-        session = FishingSession(target_rounds=0, round_index=5, awaiting_result_round=5)
+        session = FishingSession(awaiting_result_round=5)
         task._fishing_session = session
+        self._set_round_state(task, index=5)
         task._set_stage = lambda _stage: None
         task.info_set = lambda _key, _value: None
         task.log_error = lambda _message: None
@@ -217,13 +224,13 @@ class TestFishingFlow(unittest.TestCase):
         with self.assertRaises(WaitFailedException):
             task._on_control()
 
-        self.assertEqual(session.failed_count, 1)
-        self.assertEqual(session.round_index, 6)
+        self.assertEqual(task._round_state.failed_count, 1)
+        self.assertEqual(task.current_round, 5)
         self.assertIsNone(session.awaiting_result_round)
 
     def test_restock_retries_are_independent_from_round_retries(self):
         task = object.__new__(FishingTask)
-        session = FishingSession(target_rounds=1, restock_phase=RestockPhase.OPEN_SELL_MENU)
+        session = FishingSession(restock_phase=RestockPhase.OPEN_SELL_MENU)
         task._fishing_session = session
         dismissals = []
         round_recoveries = []
@@ -246,10 +253,7 @@ class TestFishingFlow(unittest.TestCase):
 
     def test_completed_sale_only_retries_scene_recovery(self):
         task = object.__new__(FishingTask)
-        task._fishing_session = FishingSession(
-            target_rounds=1,
-            restock_phase=RestockPhase.OPEN_BAIT_MENU,
-        )
+        task._fishing_session = FishingSession(restock_phase=RestockPhase.OPEN_BAIT_MENU)
         recoveries = []
         task.find_one = lambda _label: self.fail("sale must not be submitted twice")
         task._press_escape_for_recovery = lambda: recoveries.append(True)
@@ -260,10 +264,7 @@ class TestFishingFlow(unittest.TestCase):
 
     def test_completed_purchase_only_retries_scene_recovery(self):
         task = object.__new__(FishingTask)
-        task._fishing_session = FishingSession(
-            target_rounds=1,
-            restock_phase=RestockPhase.CONFIRM_BAIT,
-        )
+        task._fishing_session = FishingSession(restock_phase=RestockPhase.CONFIRM_BAIT)
         recoveries = []
         task._press_escape_for_recovery = lambda: recoveries.append(True)
 

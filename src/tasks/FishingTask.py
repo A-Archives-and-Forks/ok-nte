@@ -25,22 +25,12 @@ class RestockPhase(Enum):
 
 @dataclass
 class FishingSession:
-    target_rounds: int
-    round_index: int = 1
-    success_count: int = 0
-    failed_count: int = 0
     recovery_attempts: int = 0
     cast_attempts: int = 0
     awaiting_result_round: int | None = None
     interrupted_control_round: int | None = None
     restock_phase: RestockPhase = RestockPhase.NONE
     restock_retry_count: int = 0
-
-    @property
-    def should_continue(self) -> bool:
-        return self.target_rounds == 0 or (
-            self.success_count + self.failed_count < self.target_rounds
-        )
 
 
 class FishingTask(NTEOneTimeTask, BaseNTETask):
@@ -134,15 +124,13 @@ class FishingTask(NTEOneTimeTask, BaseNTETask):
             raise
 
     def _run_fishing_flow(self):
-        target_rounds = self.configured_rounds(default=0)
-        target_rounds_text = self.rounds_total_text(target_rounds)
-        session = FishingSession(target_rounds)
+        self.start_rounds()
+        session = FishingSession()
         self._fishing_session = session
-        self.log_info(f"开始自动钓鱼，共 {target_rounds_text} 轮")
 
         try:
             if not self.flow.loop(
-                lambda: not session.should_continue,
+                lambda: not self.has_remaining_rounds(),
                 on_error=self._handle_flow_error,
                 poll_interval=0.1,
             ):
@@ -150,20 +138,12 @@ class FishingTask(NTEOneTimeTask, BaseNTETask):
         finally:
             self._fishing_session = None
         self.info_set("当前阶段", "任务结束")
-        self.info_set("成功次数", session.success_count)
-        self.info_set("失败次数", session.failed_count)
-        self.log_info(
-            f"自动钓鱼结束，成功 {session.success_count}/{target_rounds_text}",
-            notify=True,
-        )
+        self.finish_rounds()
 
     def _on_ready(self):
         session = self._require_fishing_session()
-        round_text = self.rounds_info_text(session.round_index, session.target_rounds)
-        if self.info_get("轮次") != round_text:
-            self.info_set("轮次", round_text)
-            self.info_set("成功次数", session.success_count)
-            self.info_set("失败次数", session.failed_count)
+        if not self.begin_round():
+            return
         self._set_stage("抛竿")
         if self._continue_restock_from_ready(session):
             return
@@ -308,9 +288,9 @@ class FishingTask(NTEOneTimeTask, BaseNTETask):
         self.log_info("成功进入钓鱼场景")
 
     def _on_waiting_bite(self):
-        session = self._require_fishing_session()
+        self._require_fishing_session()
         self._set_stage("等待咬钩")
-        if not session.should_continue:
+        if not self.has_remaining_rounds():
             return
         self.send_key("f", interval=2, action_name="bite_f")
 
@@ -322,10 +302,10 @@ class FishingTask(NTEOneTimeTask, BaseNTETask):
         try:
             self.control_until_finish()
         except FlowReplan:
-            session.interrupted_control_round = session.round_index
+            session.interrupted_control_round = self.current_round
             session.cast_attempts = 0
             raise
-        session.awaiting_result_round = session.round_index
+        session.awaiting_result_round = self.current_round
         session.interrupted_control_round = None
         session.cast_attempts = 0
         session.recovery_attempts = 0
@@ -333,42 +313,35 @@ class FishingTask(NTEOneTimeTask, BaseNTETask):
     def _on_result(self):
         session = self._require_fishing_session()
         self._set_stage("结算成功")
-        if completed_round := self._completed_control_round(session):
-            self.log_info(f"第 {completed_round} 轮钓鱼成功")
-            session.success_count += 1
+        if self._completed_control_round(session):
+            self.add_success()
+            self.log_round_info("钓鱼成功")
             self._clear_completed_control(session)
-            session.round_index += 1
         session.recovery_attempts = 0
         self._return_to_fishing_ready()
 
     def _record_missing_result_before_next_control(self, session: FishingSession):
-        if not (completed_round := session.awaiting_result_round):
+        if not session.awaiting_result_round:
             return
-        session.failed_count += 1
-        self.info_set("失败原因", "下一轮控条前未检测到成功面板")
-        self.log_warning(f"第 {completed_round} 轮钓鱼失败：未检测到成功面板")
+        self.add_failed("下一轮控条前未检测到成功面板")
         session.recovery_attempts = 0
         self._clear_completed_control(session)
-        session.round_index += 1
 
     def _recover_failed_round(self, session: FishingSession):
         session.recovery_attempts += 1
         if session.recovery_attempts > self.FISHING_RETRY_LIMIT:
-            session.failed_count += 1
-            self.info_set("失败原因", "状态轮询连续失败")
-            self.screenshot(f"fishing_round_failed_{session.round_index}")
-            self.log_error(f"第 {session.round_index} 轮钓鱼失败：状态轮询连续失败")
-            session.round_index += 1
+            self.screenshot(f"fishing_round_failed_{self.current_round}")
+            self.add_failed("状态轮询连续失败")
             session.recovery_attempts = 0
             session.cast_attempts = 0
             self._clear_completed_control(session)
             self._clear_restock_state(session)
         else:
-            self.info_set("失败原因", "钓鱼状态轮询失败")
+            self.log_round_info("钓鱼状态轮询失败，正在重试")
 
         session.interrupted_control_round = None
 
-        if session.should_continue:
+        if self.has_remaining_rounds():
             self._press_escape_for_recovery()
 
     def _handle_flow_error(self, error: Exception) -> bool:
@@ -762,11 +735,7 @@ class FishingTask(NTEOneTimeTask, BaseNTETask):
             "自动补饵卖鱼",
             "开启" if self.config.get(self.CONF_AUTO_BUY_BAIT, True) else "关闭",
         )
-        self.info_set("轮次", "")
-        self.info_set("成功次数", 0)
-        self.info_set("失败次数", 0)
         self.info_set("当前阶段", "")
-        self.info_set("失败原因", "")
 
     def _set_stage(self, stage: str):
         if self.info_get("当前阶段") != stage:
