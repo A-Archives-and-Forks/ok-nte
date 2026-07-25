@@ -6,12 +6,21 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Any, Callable, List
 
-from ok import BaseTask, Box, CannotFindException, Logger, WaitFailedException, og, safe_get
+from ok import (
+    BaseTask,
+    Box,
+    CannotFindException,
+    Logger,
+    WaitFailedException,
+    og,
+    safe_get,
+)
 
 from src.Labels import Labels
 from src.scene.NTEScene import NTEScene
 from src.scene.ScreenPosition import ScreenPosition
 from src.tasks.mixin.CharUIMixin import CharUIMixin
+from src.tasks.mixin.FlowTaskMixin import FlowTaskMixin
 from src.tasks.mixin.MovementMixin import MovementMixin
 from src.tasks.mixin.OgMixin import OgMixin
 from src.tasks.mixin.VisionMixin import VisionMixin
@@ -29,7 +38,15 @@ MSG_MAIN_DETECTION_FAILED = (
 MSG_WORLD_DETECTION_FAILED = "大世界检测失败: 请检查游戏内 UI 透明度是否已设置为 1.0。"
 
 
-class BaseNTETask(CharUIMixin, MovementMixin, VisionMixin, OgMixin, LogGateMixin, BaseTask):
+class BaseNTETask(
+    FlowTaskMixin,
+    CharUIMixin,
+    MovementMixin,
+    VisionMixin,
+    OgMixin,
+    LogGateMixin,
+    BaseTask,
+):
     CONF_ROUNDS = "循环次数"
     CONF_CLAIM_REWARD_COUNT = "领取奖励次数"
     INFINITE_ROUNDS_TEXT = "∞"
@@ -47,6 +64,7 @@ class BaseNTETask(CharUIMixin, MovementMixin, VisionMixin, OgMixin, LogGateMixin
         self._last_interval_action_time = {}
         self._action_interval_lock = threading.Lock()
         self._init_log_gate()
+        self.flow.interrupt(self.check_monthly_card, self.handle_monthly_card)
 
     def configured_rounds(self, default=0) -> int:
         """读取统一的循环次数配置: 0 表示无限运行。"""
