@@ -9,7 +9,7 @@ Planner 是队伍大脑。角色只声明一个 `CombatPlan`：
 公开导入入口固定使用：
 
 ```python
-from src.combat.planner import ActionSlot, CombatContext, FieldClaim, Planner
+from src.combat.planner import ActionSlot, CombatContext, FieldClaim, Planner, RoleProfile
 ```
 
 `src.combat.planner` 只导出正式开发 API。角色代码不要直接导入
@@ -22,8 +22,8 @@ from src.combat.planner import ActionSlot, CombatContext, FieldClaim, Planner
 ```python
 def describe_role(self):
     return RoleProfile(
-        role=Role.SUB_DPS,
-        field_preference=FieldPreference.SUB_DPS,
+        role=Planner.Role.SUB_DPS,
+        field_preference=Planner.FieldPreference.SUB_DPS,
         max_field_time=1.5,
     )
 
@@ -279,13 +279,23 @@ def combat_plan(self, context):
 
 - `context.request_route(...)`：固定顺序协作路线。
 - `context.request_switch(...)`：请求下一次普通调度切给某角色。
+- `context.request_role(...)`：请求下一次普通调度切给某个队伍定位的角色；多个
+  匹配角色时按普通切人评分选择。它不指定动作，也不打断当前 entry flow。
 - `context.reserve_actions(...)`：保留队友动作。
 - `context.request_tags(...)`：请求一定数量的 tag 动作。
+
+`request_role(Planner.Role.SUPPORT)` 请求的是角色的静态队伍定位；
+`request_tags({Planner.ActionTag.SUPPORT})` 请求的是任意支援类动作。前者适合
+“让任一辅助角色进场”，后者适合“让任一队友完成一次治疗/增益动作”。
+
+```python
+context.request_role(Planner.Role.SUPPORT, reason="need a support role")
+```
 
 ## 行为摘要
 
 - 切人评分与普通 entry 执行分离。
-- 评分使用 `actions` 中最高分 ready action，再叠加 `FieldClaim`、request 和 role 分。
+- 评分使用 `actions` 中最高分 ready action，再叠加 `FieldClaim`、request 和站场偏好分。
 - 当前角色普通入场执行由 `entry` 控制；未写 entry 时按 `actions` 顺序执行。
 - `priority_ready=False` 只降低切人吸引力，不是硬阻止。
 - `can_execute=False` 是硬阻止；被阻止的 entry action 会得到失败 result，不会真实执行。
