@@ -377,7 +377,9 @@ class FishingTask(NTEOneTimeTask, BaseNTETask):
             self._press_escape_for_recovery()
             return
 
-        operation_name = "出售鱼获" if session.restock_phase is RestockPhase.OPEN_SELL_MENU else "购买鱼饵"
+        operation_name = (
+            "出售鱼获" if session.restock_phase is RestockPhase.OPEN_SELL_MENU else "购买鱼饵"
+        )
         self.log_warning(f"{operation_name} 连续失败，重新开始补货流程")
         self._set_restock_phase(session, RestockPhase.NONE)
         self._recover_failed_round(session)

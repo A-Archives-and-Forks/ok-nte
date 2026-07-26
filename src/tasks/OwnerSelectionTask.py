@@ -7,7 +7,6 @@ from src.tasks.NTEOneTimeTask import NTEOneTimeTask
 from src.tasks.RecordTask import RecordTask
 from src.ui.util import show_dialog_and_wait, tr_fmt
 
-# noqa: E501
 INST = (
     "功能说明：本功能仅负责『自动退出关卡』与『重新开启关卡』的点击循环，"
     "不包含任何局内的制作食物或招待客人操作。\n\n"
@@ -21,7 +20,7 @@ INST = (
 )
 
 EN_INST = (
-    "Feature notes: This feature only handles the click loop for automatically exiting the stage and restarting the stage."
+    "Feature notes: This feature only handles the click loop for automatically exiting the stage and restarting the stage." # noqa: E501
     "It does not perform any in-stage food preparation or customer service actions.\n\n"
     "How to use:\n"
     "1. Make sure you have configured your in-game AFK build.\n"
@@ -29,7 +28,7 @@ EN_INST = (
     "3. Click [Start].\n\n"
     "Using the recording feature:\n"
     "1. Stand at the cafe where the F interaction is available.\n"
-    "2. Enable [Use recording feature]. On first use, click [Start], then follow the prompts to record the target level."
+    "2. Enable [Use recording feature]. On first use, click [Start], then follow the prompts to record the target level." # noqa: E501
 )
 
 RECORD_INS = (
