@@ -345,7 +345,7 @@ requires-dist = [
     { name = "comtypes", specifier = ">=1.4.16" },
     { name = "librosa", specifier = ">=0.11.0" },
     { name = "mido", specifier = ">=1.3.3" },
-    { name = "ok-script", specifier = ">=1.0.176" },
+    { name = "ok-script", specifier = ">=1.0.177" },
     { name = "onnxocr-ppocrv5", specifier = ">=0.0.18" },
     { name = "opencc", specifier = ">=1.4.1" },
     { name = "opencv-python", specifier = ">=5.0.0.93" },
@@ -362,7 +362,7 @@ dev = [{ name = "polib", specifier = ">=1.2.0" }]
 
 [[package]]
 name = "ok-script"
-version = "1.0.176"
+version = "1.0.177"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mouse", marker = "sys_platform == 'win32'" },
@@ -375,9 +375,9 @@ dependencies = [
     { name = "requests", marker = "sys_platform == 'win32'" },
     { name = "typing-extensions", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/36/c9/2e61bb6db1081f60bc35cd2d41b7e67fc7f0a6bc64c40582599ec24470c4/ok_script-1.0.176.tar.gz", hash = "sha256:26761b394cb09650714c344d1439d39bb3f01ac7fc98775d7c1068efb66f7ab0", size = 647956, upload-time = "2026-07-25T15:07:19.631Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/48/4599371ea21cce004af96be95e5ea3ef1a6c65778ce6f8b809f208118b92/ok_script-1.0.177.tar.gz", hash = "sha256:bed5d76faa1e695910ae53b9c3f0b2c110f88ab9e391402d1194901c3522a1b7", size = 649291, upload-time = "2026-07-26T09:53:09.942Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ca/f2/9ae82dd1a39f214afbe067b415e5d13e7b7a60c8ff2ac9c58550bf95f16a/ok_script-1.0.176-py3-none-any.whl", hash = "sha256:c8419c04e50145c19c2404c468f4a2b6ac5fa84c87b67196f116e78363b74a2a", size = 719222, upload-time = "2026-07-25T15:07:17.679Z" },
+    { url = "https://files.pythonhosted.org/packages/75/59/1fc8fad6e04764837caa5eaa198ed0a27fe538a835d4b7d5c647c6f1f101/ok_script-1.0.177-py3-none-any.whl", hash = "sha256:382efcc6af0ca81a6d3fb1c4aa497dcd99b2951baafc522f7140a8f869f1ee18", size = 720573, upload-time = "2026-07-26T09:53:07.531Z" },
 ]
 
 [[package]]
