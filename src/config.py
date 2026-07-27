@@ -216,7 +216,7 @@ config = {
     "scene": ["src.scene.NTEScene", "NTEScene"],
     "update_pyappify": {
         "to_version": "1.1.9",
-        "zip_url": "https://github.com/BnanZ0/ok-nte/releases/download/v1.2.19/ok-nte-win32.zip",
-        "sha256": "7820277938b0b56e562b57657f26bdc9a659b00de11ca61729e43187e68d4bf7",
+        "zip_url": "https://github.com/BnanZ0/ok-nte/releases/download/v1.2.21/ok-nte-win32.zip",
+        "sha256": "db69d12591755dfd5487d08dfd3a0737b04ac50a8665222b89636e88fee397f5",
     },
 }
