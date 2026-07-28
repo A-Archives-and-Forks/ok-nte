@@ -814,7 +814,7 @@ class AutoHeistTask(NTEOneTimeTask, BaseCombatTask):
             lambda: not self.find_interac(), pre_action=lambda: self.send_key("f", interval=1)
         )
         if is_lock:
-            self.wait_until(self.is_lock_pick_active, time_out=2)
+            self.wait_until(self.is_lock_pick_active, settle_time=0.5, time_out=2)
             self.wait_until(lambda: not self.is_lock_pick_active(), settle_time=0.5)
             return not self.find_interac()
         return True
@@ -855,7 +855,7 @@ class AutoHeistTask(NTEOneTimeTask, BaseCombatTask):
                 lock_pick = time.time()
                 if direction is not None:
                     self.send_key_up(direction)
-                self.wait_until(self.is_lock_pick_active, settle_time=0.25)
+                self.wait_until(self.is_lock_pick_active, settle_time=0.5)
                 self.wait_until(lambda: not self.is_lock_pick_active(), settle_time=0.5)
                 self.sleep(0.50)
                 deadline += time.time() - lock_pick
@@ -873,7 +873,7 @@ class AutoHeistTask(NTEOneTimeTask, BaseCombatTask):
         deadline = time.time() + time_out
         while time.time() < deadline:
             if self.find_one(Labels.heist_interac_lock_pick, vertical_variance=0.05):
-                self.wait_until(self.is_lock_pick_active)
+                self.wait_until(self.is_lock_pick_active, settle_time=0.5)
             if self.is_lock_pick_active():
                 self.wait_until(lambda: not self.is_lock_pick_active(), settle_time=0.5)
                 self.sleep(0.50)
@@ -892,7 +892,7 @@ class AutoHeistTask(NTEOneTimeTask, BaseCombatTask):
             threshold=self.LOCK_PICK_MATCH_THRESHOLD,
             frame_processor=lambda cropped: iu.create_color_mask(cropped, text_white_color),
         )
-        return len(res) >= 1
+        return len(res) == 1
 
     def try_open_exit(self, direction=None):
         """尝试打开当前出口并返回是否可撤离。
