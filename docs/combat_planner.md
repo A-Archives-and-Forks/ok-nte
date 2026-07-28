@@ -166,6 +166,30 @@ context.can_execute_action(self, slot=ActionSlot.SKILL)
 
 ## BaseChar Helper
 
+### 开战会话与首次登场
+
+`BaseCombatTask.begin_combat_session()` 是战斗正式开始时的统一入口。它会创建公开的
+`task.combat_session`, 调用首切决策并记录实际首发角色; `CombatPlanner` 只负责决定首切
+目标, 不执行输入或管理会话。`CombatSession.combat_start` 是本场战斗进入时刻;
+`use_ultimate` 与 `switch_enabled` 是本场固定的战斗策略。
+
+`BaseChar.perform()` 开始时会记录本场第一个实际执行战斗逻辑的角色。角色逻辑可用：
+
+```python
+if self.is_first_engage():
+    # 本场首次实际登场的角色
+    ...
+
+if self.consume_first_engage():
+    # 全场仅成功一次
+    ...
+```
+
+`is_first_engage()` 在本场战斗内稳定; `consume_first_engage()` 全场仅返回一次 `True`。
+两者都不依赖首切耗时或时间窗口。`task.combat_session` 在首次读取时会创建默认会话;
+任务若需要禁止首切和后续切人, 应在调用 `begin_combat_session()` 前设置
+`task.combat_session.switch_enabled = False`, 不要在运行期替换切人方法。
+
 ### click_ultimate_action
 
 ```python
