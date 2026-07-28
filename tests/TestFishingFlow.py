@@ -304,6 +304,5 @@ class TestFishingFlow(unittest.TestCase):
         ):
             task.control_until_finish()
 
-
 if __name__ == "__main__":
     unittest.main()

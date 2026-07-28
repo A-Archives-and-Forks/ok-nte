@@ -445,27 +445,6 @@ class AutoHeistTask(NTEOneTimeTask, BaseCombatTask):
         finally:
             self._handling_switch_state = False
 
-    def handle_monthly_card(self):
-        monthly_card = self.find_monthly_card()
-        # self.screenshot('monthly_card1')
-        if monthly_card is not None:
-            # self.screenshot('monthly_card1')
-            self.log_info("monthly_card found click")
-            self.click(0.50, 0.89)
-            self.sleep(2)
-            # self.screenshot('monthly_card2')
-            self.click(0.50, 0.89)
-            self.sleep(2)
-            self.wait_until(
-                self.in_team,
-                time_out=10,
-                post_action=lambda: self.click(0.50, 0.89, after_sleep=1),
-            )
-            # self.screenshot('monthly_card3')
-            self.set_check_monthly_card(next_day=True)
-        # logger.debug(f'check_monthly_card {monthly_card}')
-        return monthly_card is not None
-
     def get_heist_rewards(self):
         cash = self.ocr(
             0.359, 0.595, 0.500, 0.642, frame_processor=gf.isolate_text_to_black, name="cash"
