@@ -1196,3 +1196,9 @@ msgstr "Continuously diagnose detection for Lv, lock-on target marker (white dia
 
 msgid "喷泉签到"
 msgstr "Fountain Check-in"
+
+msgid "防止 NTE 移动鼠标"
+msgstr "Prevent NTE From Moving the Cursor"
+
+msgid "后台运行时，在 NTE 将鼠标移动到屏幕中心后，自动恢复鼠标位置。"
+msgstr "When running in the background, automatically restore the cursor position after NTE moves it to the screen center."

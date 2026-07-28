@@ -936,3 +936,9 @@ msgstr "Diagnostica continuamente a detecção de Lv, marcador de alvo fixado (l
 
 msgid "喷泉签到"
 msgstr "Check-in da Fonte"
+
+msgid "防止 NTE 移动鼠标"
+msgstr "Evitar que o NTE mova o cursor"
+
+msgid "后台运行时，在 NTE 将鼠标移动到屏幕中心后，自动恢复鼠标位置。"
+msgstr "Ao rodar em segundo plano, restaura automaticamente a posição do cursor após o NTE movê-lo para o centro da tela."
