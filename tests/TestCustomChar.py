@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QApplication
 from ok.test.TaskTestCase import TaskTestCase
 
 from src.char.custom.CustomChar import CustomChar
+from src.char.custom.CustomCharDb import CustomCharDb
 from src.char.custom.CustomCharManager import CustomCharManager
 from src.config import config
 from src.tasks.trigger.AutoCombatTask import AutoCombatTask
@@ -99,6 +100,7 @@ class TestCustomChar(TaskTestCase):
 
         # 破壞單例快取，強迫 CustomCharManager 以沙盒的 Path 初始化
         CustomCharManager._instance = None
+        CustomCharDb.reset_instance()
         self.manager = CustomCharManager()
 
     def tearDown(self):
@@ -114,6 +116,7 @@ class TestCustomChar(TaskTestCase):
 
         # 拔除單例快取，這確保開發中或測試結束後，原本環境要讀 CustomCharManager 都能載入正式的 custom_chars
         CustomCharManager._instance = None
+        CustomCharDb.reset_instance()
 
     def test_manager_crud(self):
         """測試 CustomCharManager 基本存取功能與特徵匹配"""
