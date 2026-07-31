@@ -164,24 +164,20 @@ class TestCustomCharCore(unittest.TestCase):
         self.assertTrue(is_valid)
         self.assertIsNone(error)
 
-    def test_combo_syntax_guide_formats_control_flow_like_commands(self):
-        guide = CustomChar.get_combo_syntax_guide()
-
-        self.assertTrue(guide.startswith("流程指令:\n\n"))
-        self.assertIn("▶ 【 if 】", guide)
-        self.assertIn("▶ 【 else 】", guide)
-        self.assertIn("▶ 【 return 】", guide)
-        self.assertIn("• 参数:", guide)
-        self.assertIn("• 说明:", guide)
-        self.assertIn("• 示例:", guide)
-        self.assertIn("    l_click\n    if skill(0.5)", guide)
-        self.assertIn("    else: r_click\n    arc, wait(0.2)", guide)
-
         is_valid, error = CustomChar.validate_combo_syntax(
             "if ultimate: skill, wait(0.1)\nelse: l_click(2)"
         )
         self.assertTrue(is_valid)
         self.assertIsNone(error)
+
+    def test_combo_syntax_guide_uses_single_searchable_flow_block(self):
+        guide = CustomChar.get_combo_syntax_guide()
+        header = guide.splitlines()[0].lower()
+
+        self.assertTrue(header.startswith("▶"))
+        self.assertEqual(guide.count("▶"), 1)
+        for keyword in ("if", "else", "return"):
+            self.assertIn(keyword, header)
 
         is_valid, error = CustomChar.validate_combo_syntax("if ultimate: return")
         self.assertTrue(is_valid)
