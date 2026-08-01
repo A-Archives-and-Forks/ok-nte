@@ -5,6 +5,7 @@ from src.combat.BaseCombatTask import BaseCombatTask
 from src.Labels import Labels
 from src.tasks.BaseNTETask import BaseNTETask
 from src.tasks.NTEOneTimeTask import NTEOneTimeTask
+from src.utils.i18n_format import register_i18n_format
 
 
 class AnomalyTask(NTEOneTimeTask, BaseCombatTask):
@@ -428,3 +429,14 @@ class AnomalyTask(NTEOneTimeTask, BaseCombatTask):
             ),
             None,
         )
+
+
+register_i18n_format(
+    AnomalyTask.DESC_ID_RANGE_FMT,
+)
+register_i18n_format(
+    AnomalyTask.CYCLE_CUSTOM_OPTION_FMT,
+    translated_fields=frozenset({"task"}),
+    allowed_values={"task": AnomalyTask.NUMERIC_ID_TASK_TYPES},
+    translate_template=False,
+)
