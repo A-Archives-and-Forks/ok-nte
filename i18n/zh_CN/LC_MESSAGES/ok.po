@@ -433,9 +433,6 @@ msgstr ""
 msgid "经验与甲硬币"
 msgstr ""
 
-msgid "自动循环项目"
-msgstr ""
-
 msgid "自动进行异象界域任务"
 msgstr ""
 
@@ -1190,4 +1187,16 @@ msgstr ""
 msgid ""
 "{fixed_team}会优先使用已填写槽位；未填写的槽位仍会自动识别。\n"
 "如果游戏内切换队伍，已填写槽位需要在软件里手动修改。"
+msgstr ""
+
+msgid "循环模式"
+msgstr ""
+
+msgid "循环序列"
+msgstr ""
+
+msgid "自动循环序号/目标"
+msgstr ""
+
+msgid "自定义循环"
 msgstr ""

@@ -443,9 +443,6 @@ msgstr "Índice de consola"
 msgid "经验与甲硬币"
 msgstr "EXP y Monedas Escarabajo"
 
-msgid "自动循环项目"
-msgstr "Ciclo automático de elementos"
-
 msgid "自动进行异象界域任务"
 msgstr "Realizar automáticamente tareas de la Zona de Anomalías"
 
@@ -1198,3 +1195,15 @@ msgid ""
 "{fixed_team}会优先使用已填写槽位；未填写的槽位仍会自动识别。\n"
 "如果游戏内切换队伍，已填写槽位需要在软件里手动修改。"
 msgstr "{fixed_team} priorizará los espacios completados; los espacios sin completar se seguirán reconociendo automáticamente.\nSi cambia de equipo en el juego, los espacios completados deberán modificarse manualmente en el software."
+
+msgid "循环模式"
+msgstr "Modo de ciclo"
+
+msgid "循环序列"
+msgstr "Secuencia de ciclo"
+
+msgid "自动循环序号/目标"
+msgstr "Ciclo automático índice/objetivo"
+
+msgid "自定义循环"
+msgstr "Ciclo personalizado"

@@ -443,9 +443,6 @@ msgstr "Console Index"
 msgid "经验与甲硬币"
 msgstr "EXP & Beetle Coins"
 
-msgid "自动循环项目"
-msgstr "Auto Cycle Items"
-
 msgid "自动进行异象界域任务"
 msgstr "Automatically perform Anomaly Zone tasks"
 
@@ -1198,3 +1195,15 @@ msgid ""
 "{fixed_team}会优先使用已填写槽位；未填写的槽位仍会自动识别。\n"
 "如果游戏内切换队伍，已填写槽位需要在软件里手动修改。"
 msgstr "{fixed_team} will prioritize filled slots; unfilled slots will still use automatic recognition.\nIf switching teams in-game, filled slots must be updated manually in the software."
+
+msgid "循环模式"
+msgstr "Cycle Mode"
+
+msgid "循环序列"
+msgstr "Cycle Sequence"
+
+msgid "自动循环序号/目标"
+msgstr "Auto Cycle Index/Target"
+
+msgid "自定义循环"
+msgstr "Custom Cycle"
