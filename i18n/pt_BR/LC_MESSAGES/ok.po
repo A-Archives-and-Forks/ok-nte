@@ -947,3 +947,6 @@ msgstr "Ciclo automático índice/alvo"
 
 msgid "自定义循环"
 msgstr "Ciclo Personalizado"
+
+msgid "副本类型"
+msgstr "Tipo de Masmorra"
