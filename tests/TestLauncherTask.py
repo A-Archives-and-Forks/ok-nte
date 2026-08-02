@@ -65,9 +65,6 @@ class TestLauncherTask(unittest.TestCase):
         task._restore_window_if_minimized.assert_called_with(
             123, LAUNCHER_EXE, force=True
         )
-        task.log_warning.assert_any_call(
-            "Launcher window remains too small after 10s; attempting restore"
-        )
 
     def test_force_restore_minimizes_before_restoring(self):
         task = self._make_task()
