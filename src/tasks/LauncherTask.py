@@ -76,6 +76,7 @@ class LauncherTask(BaseNTETask):
         self.capture_config = DynamicConfig()
 
     def run(self):
+        self.scene.set_game_capture_ready(False)
         self.log_info("Launcher task started")
         dismiss_screensaver()
 
@@ -355,12 +356,14 @@ class LauncherTask(BaseNTETask):
             self.log_warning(
                 f"try refresh timeout {time_out}s, executor connect {self.executor.connected()}"
             )
-            return
+            raise TaskDisabledException("Timed out waiting for game capture connection")
 
         resolution_error = og.app.start_controller.check_resolution()
         if resolution_error:
             self.log_error(f"resolution_error: {resolution_error}")
             raise TaskDisabledException(f"Resolution Error: {resolution_error}")
+
+        self.scene.set_game_capture_ready(True)
 
     def _wait_for_process(self, exe_name, time_out=120, settle_window=False):
         exe_label = _format_exe_names(exe_name)
