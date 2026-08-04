@@ -127,7 +127,7 @@ class FountainTask(BaseNTETask):
         finally:
             self.send_key_up("a")
 
-        self.middle_click(after_sleep=0.4)
+        self.middle_click(after_sleep=1)
         self.send_key_down("a", after_sleep=0.2)
         try:
             self.wait_until(
@@ -151,7 +151,7 @@ class FountainTask(BaseNTETask):
             self.send_key_up("w")
 
         self.send_key("d", down_time=0.5, after_sleep=0.2)
-        self.middle_click(after_sleep=0.2)
+        self.middle_click(after_sleep=1)
         self.send_key_down("w", after_sleep=0.4)
         self.send_key("lshift", after_sleep=2)
         self.send_key("a", down_time=0.5, after_sleep=0.4)
