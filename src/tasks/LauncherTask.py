@@ -385,12 +385,6 @@ class LauncherTask(BaseNTETask):
                             f"Window for {exe_label} exists but is too small; "
                             f"hwnd={hwnd}, size={size[0]}x{size[1]}, elapsed={elapsed}s",
                         )
-                        if exe_name == LAUNCHER_EXE and elapsed > 0 and elapsed % 10 == 0:
-                            self.log_warning(
-                                f"Launcher window remains too small after {elapsed}s; "
-                                "attempting force restore"
-                            )
-                            self._restore_window_if_minimized(hwnd, exe_name, force=True)
                         self.sleep(1)
                         continue
 
@@ -514,18 +508,15 @@ class LauncherTask(BaseNTETask):
         self.log_warning(f"Timed out while waiting for {exe_name} window size to settle")
         return False
 
-    def _restore_window_if_minimized(self, hwnd, exe_name, force=False):
+    def _restore_window_if_minimized(self, hwnd, exe_name):
         is_minimized = bool(win32gui.IsIconic(hwnd))
         is_visible = bool(win32gui.IsWindowVisible(hwnd))
-        if not force and not is_minimized and is_visible:
+        if not is_minimized and is_visible:
             return True
 
-        state = "minimized" if is_minimized else "hidden" if not is_visible else "too small"
+        state = "minimized" if is_minimized else "hidden"
         self.log_info(f"Window for {_format_exe_names(exe_name)} is {state}; restoring hwnd={hwnd}")
-        if force:
-            win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
-            self.sleep(0.2)
-        if is_minimized or force:
+        if is_minimized:
             win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
         else:
             win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
