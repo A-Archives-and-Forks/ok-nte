@@ -1,12 +1,16 @@
+import json
 import os
+import shutil
 import uuid
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Lock, RLock, Thread
 from typing import TYPE_CHECKING
 
 import cv2
 import numpy as np
-from ok import Logger, og
+from ok import Logger, get_path_relative_to_exe, og
 
 from src.char.custom.CustomCharDb import CustomCharDb
 from src.char.custom.CustomCharDbMigrator import MigrationContext
@@ -17,9 +21,9 @@ if TYPE_CHECKING:
 
 logger = Logger.get_logger(__name__)
 
-CUSTOM_CHARS_DIR = "custom_chars"
-FEATURES_DIR = os.path.join(CUSTOM_CHARS_DIR, "features")
-DB_PATH = os.path.join(CUSTOM_CHARS_DIR, "db.json")
+CUSTOM_CHARS_DIR = get_path_relative_to_exe("custom_chars")
+FEATURES_DIR = get_path_relative_to_exe("custom_chars", "features")
+DB_PATH = get_path_relative_to_exe("custom_chars", "db.json")
 
 
 class CustomCharManager:
@@ -471,6 +475,64 @@ class CustomCharManager:
 
     def clear_fixed_team(self):
         self._db.clear_fixed_team()
+
+    def export_custom_data(self, zip_path: str | Path) -> bool:
+        """Export custom-character data using a stable archive layout."""
+        source_dir = Path(CUSTOM_CHARS_DIR)
+        if not source_dir.is_dir():
+            return False
+
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for file_path in source_dir.rglob("*"):
+                if file_path.is_file():
+                    archive_path = Path("custom_chars") / file_path.relative_to(source_dir)
+                    zipf.write(file_path, archive_path.as_posix())
+        return True
+
+    def import_custom_data(self, zip_path: str | Path) -> int:
+        """Validate and import a custom-character archive into the managed data directory."""
+        zip_path = Path(zip_path)
+        if not zip_path.is_file():
+            raise ValueError("文件不存在")
+
+        destination_dir = Path(CUSTOM_CHARS_DIR).resolve()
+        with zipfile.ZipFile(zip_path, "r") as zipf:
+            custom_infos = []
+            for info in (item for item in zipf.infolist() if not item.is_dir()):
+                name = info.filename.replace("\\", "/").lstrip("/")
+                if name.startswith("custom_chars/"):
+                    custom_infos.append((info, [part for part in name.split("/") if part]))
+
+            if any(not parts or parts[0] != "custom_chars" for _, parts in custom_infos):
+                raise ValueError("不支持的导入格式")
+            if any(part == ".." or ":" in part for _, parts in custom_infos for part in parts):
+                raise ValueError("不安全的压缩包路径")
+
+            db_info = next(
+                (info for info, parts in custom_infos if "/".join(parts) == "custom_chars/db.json"),
+                None,
+            )
+            if db_info is None:
+                raise ValueError("仅支持导入导出数据的 zip（缺少 custom_chars/db.json）")
+            if not custom_infos:
+                raise ValueError("压缩包内没有可导入的数据")
+
+            try:
+                json.loads(zipf.read(db_info).decode("utf-8"))
+            except Exception as error:
+                raise ValueError("仅支持导入导出数据的 zip（custom_chars/db.json 无效）") from error
+
+            imported = 0
+            for info, parts in custom_infos:
+                target = (destination_dir / Path(*parts[1:])).resolve()
+                if not target.is_relative_to(destination_dir):
+                    raise ValueError("不安全的压缩包路径")
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with zipf.open(info, "r") as source, target.open("wb") as destination:
+                    shutil.copyfileobj(source, destination)
+                imported += 1
+
+        return imported
 
 
 def create_ellipse_mask(w, h, rx, ry):

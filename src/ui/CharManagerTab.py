@@ -1,15 +1,12 @@
-import json
 import platform
-import shutil
-import subprocess
 import threading
 import time
-import zipfile
 from pathlib import Path
 
 import requests
 from ok import og
 from ok.gui.widget.CustomTab import CustomTab
+from ok.util.explorer import reveal_in_explorer
 from PySide6.QtCore import QEvent, Qt, QTimer, Signal, Slot
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -376,17 +373,10 @@ class CharManagerTab(CustomTab):
             zip_path = downloads_path / f"{base_name} ({counter}){extension}"
             counter += 1
 
-        source_dir = Path.cwd() / "custom_chars"
-
-        if not source_dir.is_dir():
+        if not self.manager.export_custom_data(zip_path):
             return
 
-        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-            for file_path in source_dir.rglob("*"):
-                if file_path.is_file():
-                    zipf.write(file_path, file_path.relative_to(Path.cwd()))
-
-        subprocess.run(f'explorer /select,"{zip_path.resolve()}"')
+        reveal_in_explorer(zip_path)
 
     def on_import_data(self):
         downloads_path = Path.home() / "Downloads"
@@ -397,7 +387,7 @@ class CharManagerTab(CustomTab):
             return
 
         try:
-            imported = self._import_custom_data_zip(Path(file_path))
+            imported = self.manager.import_custom_data(file_path)
         except Exception as e:
             InfoBar.error(
                 title=self.tr_import_failed,
@@ -427,49 +417,6 @@ class CharManagerTab(CustomTab):
             duration=2000,
             parent=self.window(),
         )
-
-    def _import_custom_data_zip(self, zip_path: Path) -> int:
-        if not zip_path.is_file():
-            raise ValueError("文件不存在")
-
-        with zipfile.ZipFile(zip_path, "r") as zipf:
-            custom_infos = []
-            for info in (i for i in zipf.infolist() if not i.is_dir()):
-                name = info.filename.replace("\\", "/").lstrip("/")
-                if name.startswith("custom_chars/"):
-                    custom_infos.append((info, [p for p in name.split("/") if p]))
-
-            if any(not parts or parts[0] != "custom_chars" for _, parts in custom_infos):
-                raise ValueError("不支持的导入格式")
-            if any(p == ".." or ":" in p for _, parts in custom_infos for p in parts):
-                raise ValueError("不安全的压缩包路径")
-
-            db_info = next(
-                (info for info, parts in custom_infos if "/".join(parts) == "custom_chars/db.json"),
-                None,
-            )
-            if db_info is None:
-                raise ValueError("仅支持导入导出数据的 zip（缺少 custom_chars/db.json）")
-            if not custom_infos:
-                raise ValueError("压缩包内没有可导入的数据")
-
-            try:
-                json.loads(zipf.read(db_info).decode("utf-8"))
-            except Exception:
-                raise ValueError("仅支持导入导出数据的 zip（custom_chars/db.json 无效）")
-
-            dest_root = Path.cwd().resolve()
-            imported = 0
-            for info, parts in custom_infos:
-                target = (dest_root / Path(*parts)).resolve()
-                if not target.is_relative_to(dest_root):
-                    raise ValueError("不安全的压缩包路径")
-                target.parent.mkdir(parents=True, exist_ok=True)
-                with zipf.open(info, "r") as src, open(target, "wb") as dst:
-                    shutil.copyfileobj(src, dst)
-                imported += 1
-
-        return imported
 
     def on_char_selected(self, item):
         if not item:
