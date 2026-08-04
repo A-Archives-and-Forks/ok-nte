@@ -298,27 +298,13 @@ class LauncherTask(BaseNTETask):
         return per > 0.8, box
 
     def _ensure_launcher_visible(self):
-        launcher_proc = self._find_process(LAUNCHER_EXE)
-        if not launcher_proc:
-            return False
-        launcher_hwnd = self._find_window_for_process(
-            launcher_proc,
-            hwnd_class=self.capture_config.LAUNCHER_CAPTURE_CONFIG["windows"]["hwnd_class"],
-            require_title=True,
-        )
+        _, launcher_hwnd = self._find_process_window(LAUNCHER_EXE, require_title=True)
         if not launcher_hwnd:
             return False
         return self._restore_window_if_minimized(launcher_hwnd, LAUNCHER_EXE)
 
     def _is_launcher_hidden_or_minimized(self):
-        launcher_proc = self._find_process(LAUNCHER_EXE)
-        if not launcher_proc:
-            return False
-        launcher_hwnd = self._find_window_for_process(
-            launcher_proc,
-            hwnd_class=self.capture_config.LAUNCHER_CAPTURE_CONFIG["windows"]["hwnd_class"],
-            require_title=True,
-        )
+        _, launcher_hwnd = self._find_process_window(LAUNCHER_EXE, require_title=True)
         if not launcher_hwnd:
             return False
         return bool(win32gui.IsIconic(launcher_hwnd) or not win32gui.IsWindowVisible(launcher_hwnd))
@@ -373,9 +359,11 @@ class LauncherTask(BaseNTETask):
         )
         start = time.time()
         while time.time() - start < time_out:
-            proc = self._find_process(exe_name)
+            proc, hwnd = self._find_process_window(
+                exe_name,
+                require_title=exe_name == LAUNCHER_EXE,
+            )
             if proc:
-                hwnd = self._find_window_for_process(proc)
                 if hwnd:
                     self._restore_window_if_minimized(hwnd, exe_name)
                     size = self._get_window_size(hwnd)
@@ -426,6 +414,20 @@ class LauncherTask(BaseNTETask):
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
         return None
+
+    def _find_process_window(self, exe_name, require_title=False):
+        proc = self._find_process(exe_name)
+        if not proc:
+            return None, 0
+
+        capture_config = (
+            self.capture_config.GAME_CAPTURE_CONFIG
+            if exe_name == GAME_EXE
+            else self.capture_config.LAUNCHER_CAPTURE_CONFIG
+        )["windows"]
+        return proc, self._find_window_for_process(
+            proc, hwnd_class=capture_config["hwnd_class"], require_title=require_title
+        )
 
     def _find_window_for_process(self, proc_info, hwnd_class=None, require_title=False):
         pid = proc_info.get("pid")

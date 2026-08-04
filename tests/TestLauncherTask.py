@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 
 from ok import TaskDisabledException
 
+from src import LAUNCHER_EXE
 from src.tasks.LauncherTask import LauncherButtonState, LauncherTask
 
 
@@ -13,6 +14,11 @@ class TestLauncherTask(unittest.TestCase):
         task.log_warning = Mock()
         task.log_info_gated = Mock()
         task.sleep = Mock()
+        task.capture_config = Mock()
+        task.capture_config.GAME_CAPTURE_CONFIG = {"windows": {"hwnd_class": "UnrealWindow"}}
+        task.capture_config.LAUNCHER_CAPTURE_CONFIG = {
+            "windows": {"hwnd_class": "Qt51517QWindowOwnDC"}
+        }
         return task
 
     def test_hidden_launcher_is_shown_before_capture(self):
@@ -49,3 +55,17 @@ class TestLauncherTask(unittest.TestCase):
             self.assertTrue(task._click_start_game())
 
         task.click.assert_called_once_with("start_button", after_sleep=2)
+
+    def test_find_process_window_uses_launcher_capture_window_class(self):
+        task = self._make_task()
+        proc = {"pid": 1}
+        task._find_process = Mock(return_value=proc)
+        task._find_window_for_process = Mock(return_value=123)
+
+        self.assertEqual((proc, 123), task._find_process_window(LAUNCHER_EXE))
+
+        task._find_window_for_process.assert_called_once_with(
+            proc,
+            hwnd_class="Qt51517QWindowOwnDC",
+            require_title=False,
+        )
