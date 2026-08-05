@@ -78,8 +78,12 @@ class CharManagerTab(CustomTab):
             "导入数据会完整覆盖当前用户资料.\n导出数据会导出完整用户资料."
         )
         self.tr_external_chars_hint = tr_fmt(
-            "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。",
+            (
+                "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。<br>"
+                "关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>。"
+            ),
             refresh=og.app.tr("刷新列表"),
+            doc_url="https://cnb.cool/BnanZ0/ok-nte-update/-/tree/main/docs/combat_planner.md",
         )
         self.tr_import_failed = og.app.tr("导入失败")
         self.tr_import_success = og.app.tr("导入成功")
@@ -402,6 +406,7 @@ class CharManagerTab(CustomTab):
         )
         dialog.viewLayout.addWidget(open_external_chars_folder_btn)
         external_chars_hint = CaptionLabel(self.tr_external_chars_hint, dialog)
+        external_chars_hint.setOpenExternalLinks(True) 
         external_chars_hint.setWordWrap(True)
         dialog.viewLayout.addWidget(external_chars_hint)
 
