@@ -89,6 +89,7 @@ class TestCustomChar(TaskTestCase):
         self.temp_dir = tempfile.mkdtemp()
         db_path = os.path.join(self.temp_dir, "db.json")
         features_dir = os.path.join(self.temp_dir, "features")
+        external_chars_dir = os.path.join(self.temp_dir, "external_chars")
         os.makedirs(features_dir, exist_ok=True)
 
         # 封裝所有的路徑修改 Patch 以免感染到專案環境
@@ -96,6 +97,7 @@ class TestCustomChar(TaskTestCase):
             patch("src.char.custom.CustomCharManager.CUSTOM_CHARS_DIR", self.temp_dir),
             patch("src.char.custom.CustomCharManager.DB_PATH", db_path),
             patch("src.char.custom.CustomCharManager.FEATURES_DIR", features_dir),
+            patch("src.char.custom.CustomCharManager.EXTERNAL_CHARS_DIR", external_chars_dir),
         ]
         for p in self.patchers:
             p.start()

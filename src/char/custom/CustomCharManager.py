@@ -42,7 +42,8 @@ class CustomCharManager:
         if hasattr(self, "initialized") and self.initialized:
             return
         self._data_lock = RLock()
-        os.makedirs(FEATURES_DIR, exist_ok=True)
+        for directory in (CUSTOM_CHARS_DIR, FEATURES_DIR, EXTERNAL_CHARS_DIR):
+            os.makedirs(directory, exist_ok=True)
         context = MigrationContext(
             is_builtin_impl=self.is_registered_impl,
             get_builtin_prefix=self.get_builtin_prefix,
@@ -541,6 +542,16 @@ class CustomCharManager:
                 json.loads(zipf.read(db_info).decode("utf-8"))
             except Exception as error:
                 raise ValueError("仅支持导入导出数据的 zip（custom_chars/db.json 无效）") from error
+
+            imported_paths = {Path(*parts[1:]) for _, parts in custom_infos}
+            source_zip = zip_path.resolve()
+            for existing_path in destination_dir.rglob("*"):
+                if (
+                    existing_path.is_file()
+                    and existing_path.relative_to(destination_dir) not in imported_paths
+                    and existing_path.resolve() != source_zip
+                ):
+                    existing_path.unlink()
 
             imported = 0
             for info, parts in custom_infos:

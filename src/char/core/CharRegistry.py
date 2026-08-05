@@ -49,6 +49,16 @@ class CharRegistry:
         with self._lock:
             return sorted(self._entries.values(), key=lambda entry: entry.impl_id)
 
+    def rescan_external(self) -> None:
+        """Rediscover external character modules without reloading built-ins."""
+        with self._lock:
+            self._entries = {
+                impl_id: entry
+                for impl_id, entry in self._entries.items()
+                if entry.source != "external"
+            }
+            self._scan_external()
+
     def ensure_scanned(self) -> None:
         if self._builtin_scanned and self._external_scanned:
             return
@@ -58,16 +68,17 @@ class CharRegistry:
                     self._register_builtin_module(path)
                 self._builtin_scanned = True
             if not self._external_scanned:
-                try:
-                    external_paths = sorted(self._get_external_dir().glob("*.py"))
-                except OSError as error:
-                    logger.warning(
-                        f"Failed to scan external character modules: {error.__class__.__name__}"
-                    )
-                    external_paths = []
-                for path in external_paths:
-                    self._register_external_module(path)
-                self._external_scanned = True
+                self._scan_external()
+
+    def _scan_external(self) -> None:
+        try:
+            external_paths = sorted(self._get_external_dir().glob("*.py"))
+        except OSError as error:
+            logger.warning(f"Failed to scan external character modules: {error.__class__.__name__}")
+            external_paths = []
+        for path in external_paths:
+            self._register_external_module(path)
+        self._external_scanned = True
 
     def _get_external_dir(self) -> Path:
         if self._external_dir is not None:

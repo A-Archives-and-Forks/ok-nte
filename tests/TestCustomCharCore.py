@@ -3,6 +3,7 @@ import os
 import shutil
 import unittest
 import uuid
+import zipfile
 from unittest.mock import Mock, patch
 
 from src.char.custom.CustomChar import CustomChar
@@ -21,12 +22,14 @@ class TestCustomCharCore(unittest.TestCase):
         os.makedirs(self.temp_dir, exist_ok=True)
         self.db_path = os.path.join(self.temp_dir, "db.json")
         self.features_dir = os.path.join(self.temp_dir, "features")
+        self.external_chars_dir = os.path.join(self.temp_dir, "external_chars")
         os.makedirs(self.features_dir, exist_ok=True)
 
         self.patchers = [
             patch("src.char.custom.CustomCharManager.CUSTOM_CHARS_DIR", self.temp_dir),
             patch("src.char.custom.CustomCharManager.DB_PATH", self.db_path),
             patch("src.char.custom.CustomCharManager.FEATURES_DIR", self.features_dir),
+            patch("src.char.custom.CustomCharManager.EXTERNAL_CHARS_DIR", self.external_chars_dir),
         ]
         for patcher in self.patchers:
             patcher.start()
@@ -47,6 +50,36 @@ class TestCustomCharCore(unittest.TestCase):
     def _read_persisted_db(self):
         with open(self.db_path, encoding="utf-8") as file:
             return json.load(file)
+
+    def test_manager_creates_external_characters_directory(self):
+        CustomCharManager()
+
+        self.assertTrue(os.path.isdir(self.external_chars_dir))
+
+    def test_import_removes_stale_external_character_files(self):
+        manager = CustomCharManager()
+        os.makedirs(self.external_chars_dir, exist_ok=True)
+        old_external_file = os.path.join(self.external_chars_dir, "old.py")
+        with open(old_external_file, "w", encoding="utf-8") as file:
+            file.write("old")
+
+        archive_path = os.path.join(
+            os.path.dirname(self.temp_dir), f"import_{uuid.uuid4().hex}.zip"
+        )
+        try:
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr(
+                    "custom_chars/db.json", '{"combos": {}, "characters": {}, "features": {}}'
+                )
+                archive.writestr("custom_chars/external_chars/new.py", "new")
+
+            manager.import_custom_data(archive_path)
+        finally:
+            if os.path.exists(archive_path):
+                os.remove(archive_path)
+
+        self.assertFalse(os.path.exists(old_external_file))
+        self.assertTrue(os.path.isfile(os.path.join(self.external_chars_dir, "new.py")))
 
     @staticmethod
     def _character_id_by_name(manager, char_name):

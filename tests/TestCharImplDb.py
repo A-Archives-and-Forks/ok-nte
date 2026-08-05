@@ -83,6 +83,27 @@ class TestCharImplDb(unittest.TestCase):
         self.assertEqual(entry.char_cls.__name__, "FutureHero")
         self.assertEqual(entry.display_name("zh_CN"), "外置英雄")
 
+    def test_external_registry_rescan_does_not_reload_builtins(self):
+        external_dir = Path(self.temp_dir) / "external_chars"
+        external_dir.mkdir()
+        registry = CharRegistry(external_dir=external_dir)
+        builtin_entry = registry.get("builtin:zero")
+
+        (external_dir / "hero.py").write_text(
+            "from src.char.BaseChar import BaseChar, Element\n"
+            "\n"
+            "class FutureHero(BaseChar):\n"
+            "    cn_name = '外置英雄'\n"
+            "    en_name = 'Future Hero'\n"
+            "    element = Element.PURPLE\n",
+            encoding="utf-8",
+        )
+
+        registry.rescan_external()
+
+        self.assertIs(registry.get("builtin:zero"), builtin_entry)
+        self.assertIsNotNone(registry.get("external:futurehero"))
+
 
 if __name__ == "__main__":
     unittest.main()

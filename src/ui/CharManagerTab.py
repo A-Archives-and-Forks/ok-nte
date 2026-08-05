@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from ok import og
 from ok.gui.widget.CustomTab import CustomTab
-from ok.util.explorer import reveal_in_explorer
+from ok.util.explorer import open_explorer_folder, reveal_in_explorer
 from PySide6.QtCore import QEvent, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
@@ -41,7 +41,8 @@ from qfluentwidgets import (
     TransparentToolButton,
 )
 
-from src.char.custom.CustomCharManager import CustomCharManager
+from src.char.core.CharRegistry import char_registry
+from src.char.custom.CustomCharManager import EXTERNAL_CHARS_DIR, CustomCharManager
 from src.ui.common import (
     COMBO,
     TEAM_MANAGEMENT,
@@ -50,6 +51,7 @@ from src.ui.common import (
     SearchableListWidget,
     SmoothSearchBar,
     char_manager_signals,
+    confirm_external_code_import,
     cv_to_pixmap,
 )
 from src.ui.util import tr_fmt
@@ -71,6 +73,7 @@ class CharManagerTab(CustomTab):
         self.tr_unbind_success = og.app.tr("解除绑定")
         self.tr_unbind_msg = tr_fmt("已解除 {} 的{combo}绑定", combo=COMBO)
         self.tr_import_data = og.app.tr("导入数据")
+        self.tr_open_external_chars_folder = og.app.tr("打开外置代码目录")
         self.tr_data_manager_hint = og.app.tr(
             "导入数据会完整覆盖当前用户资料.\n导出数据会导出完整用户资料."
         )
@@ -136,7 +139,7 @@ class CharManagerTab(CustomTab):
 
         self.refresh_btn = PushButton(FluentIcon.SYNC, og.app.tr("刷新列表"), self)
         self.refresh_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.refresh_btn.clicked.connect(self.refresh_list)
+        self.refresh_btn.clicked.connect(self.on_refresh_btn_clicked)
 
         self.delete_char_btn = PushButton(FluentIcon.DELETE, og.app.tr("删除角色"), self)
         self.delete_char_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -355,6 +358,10 @@ class CharManagerTab(CustomTab):
 
         QTimer.singleShot(0, self._update_feature_widget_height)
 
+    def on_refresh_btn_clicked(self):
+        char_registry.rescan_external()
+        self.refresh_list()
+
     def on_export_data(self):
         downloads_path = Path.home() / "Downloads"
         base_name = "ok-nte-custom"
@@ -386,13 +393,24 @@ class CharManagerTab(CustomTab):
         data_manager_hint.setWordWrap(True)
         dialog.viewLayout.addWidget(data_manager_hint)
 
+        open_external_chars_folder_btn = PushButton(
+            FluentIcon.FOLDER, self.tr_open_external_chars_folder, dialog
+        )
+        dialog.viewLayout.addWidget(open_external_chars_folder_btn)
+
         import_data_btn.clicked.connect(self.on_import_data)
         export_data_btn.clicked.connect(self.on_export_data)
+        open_external_chars_folder_btn.clicked.connect(self.on_open_external_chars_folder)
         dialog.yesButton.setText(og.app.tr("关闭"))
         dialog.cancelButton.hide()
         dialog.exec()
 
+    def on_open_external_chars_folder(self):
+        open_explorer_folder(EXTERNAL_CHARS_DIR)
+
     def on_import_data(self):
+        if not confirm_external_code_import(self):
+            return
         downloads_path = Path.home() / "Downloads"
         file_path, _ = QFileDialog.getOpenFileName(
             self, self.tr_import_data, str(downloads_path), "Zip Files (*.zip)"
@@ -419,7 +437,7 @@ class CharManagerTab(CustomTab):
         self.manager.load_db()
         self.manager.migrate_db_schema()
         self.manager.validate_db()
-        self.refresh_list()
+        self.on_refresh_btn_clicked()
         char_manager_signals.refresh_tab.emit()
 
         InfoBar.success(
