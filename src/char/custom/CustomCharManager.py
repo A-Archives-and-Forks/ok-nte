@@ -58,7 +58,7 @@ class CustomCharManager:
         self._cache_scr_h = -1
         self._cache_fids = set()
         self._preheat_started = False
-        self._db.reload()
+        self.validate_db()
         self.initialized = True
         self.preheat_feature_cache_async()
 
@@ -137,6 +137,7 @@ class CustomCharManager:
 
     def validate_db(self):
         self._db.reload()
+        self._cleanup_orphan_feature_images()
         self._invalidate_feature_cache()
 
     def save_db(self):
@@ -153,6 +154,27 @@ class CustomCharManager:
             self._raw_feature_cache.clear()
         else:
             self._raw_feature_cache.pop(feature_id, None)
+
+    def _cleanup_orphan_feature_images(self):
+        """Remove PNG feature files that are no longer referenced by the database."""
+        referenced_feature_ids = set(self._db.get_feature_ids())
+        try:
+            feature_paths = list(Path(FEATURES_DIR).glob("*.png"))
+        except OSError as error:
+            logger.error("Failed to scan custom feature images", error)
+            return
+
+        for path in feature_paths:
+            if not path.is_file() or path.stem in referenced_feature_ids:
+                continue
+            try:
+                path.unlink()
+                logger.info(f"Removed orphan custom feature image: {path.name}")
+            except OSError as error:
+                logger.error(f"Failed to remove orphan custom feature image: {path.name}", error)
+
+        with self._data_lock:
+            self._invalidate_raw_feature_cache()
 
     def _get_feature_ids_snapshot(self):
         return self._db.get_feature_ids()

@@ -1,4 +1,5 @@
 import json
+import os
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -165,6 +166,29 @@ class TestCustomChar(TaskTestCase):
         )
         self.assertTrue(is_match, f"match_char: {match_char}, similarity: {similarity}")
         self.assertEqual(match_char, char_id)
+
+    def test_validate_db_removes_unreferenced_feature_images(self):
+        char_id = self.manager.create_character("char_cleanup", "")
+        referenced_feature_id = self.manager.add_feature_to_character(
+            char_id, np.zeros((10, 10, 3), dtype=np.uint8), self.task.width, self.task.height
+        )
+        orphan_feature_id = "orphan_feature"
+        self.manager.save_feature_image(
+            orphan_feature_id, np.zeros((10, 10, 3), dtype=np.uint8)
+        )
+        note_path = os.path.join(self.temp_dir, "features", "note.txt")
+        with open(note_path, "w", encoding="utf-8") as file:
+            file.write("keep")
+
+        self.manager.validate_db()
+
+        self.assertTrue(
+            os.path.exists(os.path.join(self.temp_dir, "features", f"{referenced_feature_id}.png"))
+        )
+        self.assertFalse(
+            os.path.exists(os.path.join(self.temp_dir, "features", f"{orphan_feature_id}.png"))
+        )
+        self.assertTrue(os.path.exists(note_path))
 
     def test_combo_compile(self):
         """測試 CustomChar 透過 AST 語法樹將字串解析為獨立指令的容錯與精準度"""
