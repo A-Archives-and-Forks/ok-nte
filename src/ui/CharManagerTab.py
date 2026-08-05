@@ -8,16 +8,19 @@ from ok import og
 from ok.gui.widget.CustomTab import CustomTab
 from ok.util.explorer import reveal_in_explorer
 from PySide6.QtCore import QEvent, Qt, QTimer, Signal, Slot
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QFileDialog,
     QGraphicsBlurEffect,
     QHBoxLayout,
+    QListWidgetItem,
     QSizePolicy,
     QSpacerItem,
     QVBoxLayout,
     QWidget,
 )
 from qfluentwidgets import (
+    CaptionLabel,
     FlowLayout,
     FluentIcon,
     Flyout,
@@ -30,7 +33,6 @@ from qfluentwidgets import (
     PrimaryPushButton,
     PrimaryToolButton,
     PushButton,
-    QColor,
     SimpleCardWidget,
     SmoothScrollArea,
     SubtitleLabel,
@@ -69,6 +71,9 @@ class CharManagerTab(CustomTab):
         self.tr_unbind_success = og.app.tr("解除绑定")
         self.tr_unbind_msg = tr_fmt("已解除 {} 的{combo}绑定", combo=COMBO)
         self.tr_import_data = og.app.tr("导入数据")
+        self.tr_data_manager_hint = og.app.tr(
+            "导入数据会完整覆盖当前用户资料.\n导出数据会导出完整用户资料."
+        )
         self.tr_import_failed = og.app.tr("导入失败")
         self.tr_import_success = og.app.tr("导入成功")
         self.tr_import_msg = og.app.tr("已导入 {} 个文件")
@@ -138,18 +143,13 @@ class CharManagerTab(CustomTab):
         self.delete_char_btn.clicked.connect(self.on_delete_char)
         self.delete_char_btn.setEnabled(False)
 
-        self.import_btn = PushButton(FluentIcon.DOWNLOAD, self.tr_import_data, self)
-        self.import_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.import_btn.clicked.connect(self.on_import_data)
-
-        self.export_btn = PushButton(FluentIcon.SHARE, og.app.tr("导出数据"), self)
-        self.export_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.export_btn.clicked.connect(self.on_export_data)
+        self.data_manager_btn = PushButton(FluentIcon.FOLDER, og.app.tr("资料管理"), self)
+        self.data_manager_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.data_manager_btn.clicked.connect(self.show_data_manager)
 
         self.left_v_layout.addWidget(self.refresh_btn)
         self.left_v_layout.addWidget(self.delete_char_btn)
-        self.left_v_layout.addWidget(self.import_btn)
-        self.left_v_layout.addWidget(self.export_btn)
+        self.left_v_layout.addWidget(self.data_manager_btn)
         self.left_v_layout.addWidget(self.char_list_widget, 1)
 
         # Right side: Detail View
@@ -314,8 +314,6 @@ class CharManagerTab(CustomTab):
         self.char_list_widget.setUpdatesEnabled(False)
         self.char_list_widget.clear()
         for char_id, char_data in self._all_characters.items():
-            from PySide6.QtWidgets import QListWidgetItem
-
             item = QListWidgetItem(char_data["char_name"])
             item.setData(Qt.ItemDataRole.UserRole, char_id)
             self.char_list_widget.addItem(item)
@@ -372,6 +370,27 @@ class CharManagerTab(CustomTab):
             return
 
         reveal_in_explorer(zip_path)
+
+    def show_data_manager(self):
+        dialog = MessageBoxBase(self)
+        dialog.widget.setMinimumWidth(460)
+        dialog.viewLayout.addWidget(SubtitleLabel(og.app.tr("资料管理"), dialog))
+
+        backup_layout = QHBoxLayout()
+        import_data_btn = PushButton(FluentIcon.DOWNLOAD, self.tr_import_data, dialog)
+        export_data_btn = PushButton(FluentIcon.SHARE, og.app.tr("导出数据"), dialog)
+        backup_layout.addWidget(import_data_btn)
+        backup_layout.addWidget(export_data_btn)
+        dialog.viewLayout.addLayout(backup_layout)
+        data_manager_hint = CaptionLabel(self.tr_data_manager_hint, dialog)
+        data_manager_hint.setWordWrap(True)
+        dialog.viewLayout.addWidget(data_manager_hint)
+
+        import_data_btn.clicked.connect(self.on_import_data)
+        export_data_btn.clicked.connect(self.on_export_data)
+        dialog.yesButton.setText(og.app.tr("关闭"))
+        dialog.cancelButton.hide()
+        dialog.exec()
 
     def on_import_data(self):
         downloads_path = Path.home() / "Downloads"
