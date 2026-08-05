@@ -1,14 +1,45 @@
 import re
 import time
 
-from ok import Box
+from ok import Box, TaskDisabledException
+from qfluentwidgets import FluentIcon
 
 from src.Labels import Labels
 from src.tasks.BaseNTETask import BaseNTETask
+from src.tasks.NTEOneTimeTask import NTEOneTimeTask
 from src.utils import image_utils as iu
 
 
-class CinemaDateMixin(BaseNTETask):
+class CinemaDateTask(NTEOneTimeTask, BaseNTETask):
+    CINEMA_DATE_TARGET = "约会目标"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = "影院约会"
+        self.icon = FluentIcon.SHOPPING_CART
+        self.group_name = "日常/周常"
+        self.visible = False
+
+        self.default_config.update(
+            {
+                self.CINEMA_DATE_TARGET: "",
+            }
+        )
+
+    def run(self):
+        super().run()
+        try:
+            target = self.config.get(self.CINEMA_DATE_TARGET, "")
+            self.do_run(target)
+        except TaskDisabledException:
+            raise
+        except Exception as e:
+            self.log_error("CinemaDateTask error", e)
+            raise
+
+    def do_run(self, target=""):
+        return self.run_cinema_date(target)
+
     def run_cinema_date(self, target=""):
         self.ensure_main(esc=True, time_out=60)
         self._tp_to_cinema()

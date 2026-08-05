@@ -5,7 +5,7 @@ import numpy as np
 from ok import Box
 
 from src.Labels import Labels
-from src.tasks.GiftTask import GiftTask
+from src.tasks.daily.GiftTask import GiftTask
 
 
 class TestGiftTask(unittest.TestCase):

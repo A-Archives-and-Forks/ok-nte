@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from src.coffee import CoffeeFoodOption, CoffeeRuntime
-from src.tasks.CoffeeTask import CoffeeTask
+from src.tasks.daily.CoffeeTask import CoffeeTask
 
 
 def _runtime_task(config=None):
