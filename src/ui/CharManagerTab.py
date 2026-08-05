@@ -53,11 +53,6 @@ from src.ui.common import (
 from src.ui.util import tr_fmt
 
 
-def get_builtin_prefix():
-    # Backward-compatible export for modules that still import this symbol.
-    return CustomCharManager.get_builtin_prefix()
-
-
 class CharManagerTab(CustomTab):
     doc_translation_ready = Signal(str, str)
 
@@ -435,7 +430,7 @@ class CharManagerTab(CustomTab):
     def _reload_combo_options(self):
         self.combo_select.blockSignals(True)
         self.combo_select.clear()
-        for combo_name, combo_id in self.manager.get_all_combo_items(with_builtin_prefix=True):
+        for combo_name, combo_id in self.manager.get_all_impl_items(with_builtin_prefix=True):
             self.combo_select.addItem(combo_name, userData=combo_id)
         self.combo_select.setCurrentIndex(-1)
         self.combo_select.blockSignals(False)
@@ -452,7 +447,7 @@ class CharManagerTab(CustomTab):
         return ""
 
     def _set_combo_selection_by_id(self, combo_id: str):
-        combo_name = self.manager.get_combo_name(combo_id, with_builtin_prefix=True)
+        combo_name = self.manager.get_impl_name(combo_id, with_builtin_prefix=True)
         self.combo_select.blockSignals(True)
         idx = self.combo_select.findData(combo_id)
         if idx >= 0:
@@ -474,8 +469,8 @@ class CharManagerTab(CustomTab):
         self.title_spacer.changeSize(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.title_h_layout.invalidate()
         self.char_name_edit_btn.show()
-        combo_id = char_info["combo_id"]
-        combo_name = self.manager.get_combo_name(combo_id, with_builtin_prefix=True)
+        combo_id = char_info["impl_id"]
+        combo_name = self.manager.get_impl_name(combo_id, with_builtin_prefix=True)
         self._set_combo_selection_by_id(combo_id)
 
         # Manually trigger the text change logic to ensure built-in warnings render
@@ -525,7 +520,7 @@ class CharManagerTab(CustomTab):
         if combo_id is None:
             combo_id = self._resolve_combo_id(combo_name)
 
-        is_builtin = self.manager.is_builtin_combo(combo_id)
+        is_builtin = self.manager.is_builtin_impl(combo_id)
         if is_builtin:
             self.combo_text.setText(self.tr_builtin_text)
             self.combo_text.setReadOnly(True)
@@ -557,7 +552,7 @@ class CharManagerTab(CustomTab):
     def on_test_combo(self):
         combo_input = self.combo_select.currentText().strip()
         combo_id = self._resolve_combo_id(combo_input)
-        is_builtin = self.manager.is_builtin_combo(combo_id)
+        is_builtin = self.manager.is_builtin_impl(combo_id)
 
         if not is_builtin:
             combo_content = self.combo_text.toPlainText().strip()
@@ -581,7 +576,7 @@ class CharManagerTab(CustomTab):
 
     def _run_combo_test(self):
         og.app.start_controller.do_start()
-        from src.char.CharFactory import get_char_by_id
+        from src.char.core.CharFactory import get_char_by_id
         from src.char.custom.CustomChar import CustomChar
         from src.tasks.trigger.AutoCombatTask import AutoCombatTask
 
@@ -593,7 +588,7 @@ class CharManagerTab(CustomTab):
         combo_id = self._resolve_combo_id(combo_input)
         if combo_id:
             test_char = get_char_by_id(
-                task, index=0, char_id=self.current_char_id, combo_id=combo_id
+                task, index=0, char_id=self.current_char_id, impl_id=combo_id
             )
         else:
             test_char = CustomChar(task, index=0, char_id=self.current_char_id)
@@ -635,11 +630,11 @@ class CharManagerTab(CustomTab):
         combo_input = self.combo_select.currentText().strip()
         combo_content = self.combo_text.toPlainText().strip()
         combo_id = self._resolve_combo_id(combo_input)
-        combo_name = self.manager.get_combo_name(combo_id, with_builtin_prefix=True)
+        combo_name = self.manager.get_impl_name(combo_id, with_builtin_prefix=True)
         if not combo_name:
             combo_name = combo_input
 
-        is_builtin = self.manager.is_builtin_combo(combo_id)
+        is_builtin = self.manager.is_builtin_impl(combo_id)
 
         if is_builtin and not self.current_char_id:
             return
@@ -773,7 +768,7 @@ class CharManagerTab(CustomTab):
         if not self.current_char_id:
             return
 
-        self.manager.update_character(self.current_char_id, combo_id="")
+        self.manager.update_character(self.current_char_id, impl_id="")
 
         # 刷新列表和右侧界面
         self._render_right_panel()
@@ -792,15 +787,15 @@ class CharManagerTab(CustomTab):
     def on_delete_combo(self):
         combo_name = self.combo_select.currentText().strip()
         combo_id = self._resolve_combo_id(combo_name)
-        if not combo_id or self.manager.is_builtin_combo(combo_id):
+        if not combo_id or self.manager.is_builtin_impl(combo_id):
             return
 
         self.manager.delete_combo(combo_id)
 
         # 解绑所有正在使用该出招表的角色
         for c_id, c_data in self.manager.get_all_characters().items():
-            if c_data.get("combo_id", "") == combo_id:
-                self.manager.update_character(c_id, combo_id="")
+            if c_data.get("impl_id", "") == combo_id:
+                self.manager.update_character(c_id, impl_id="")
 
         # 刷新出招表下拉列表
         self._reload_combo_options()

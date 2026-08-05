@@ -14,12 +14,20 @@ from src.tasks.trigger.AutoCombatTask import AutoCombatTask
 from src.ui.CharManagerTab import CharManagerTab
 from src.ui.TeamManagerTab import TeamManagerTab
 
-PREDEFINED_CHARACTER_ID = "char_zero"
+PREDEFINED_CHARACTER_ID = "builtin:zero"
 
 
 class TestCustomChar(TaskTestCase):
     task_class = AutoCombatTask
     config = config
+
+    @staticmethod
+    def _character_id_by_name(manager, char_name):
+        return next(
+            char_id
+            for char_id, info in manager.get_all_characters().items()
+            if info["char_name"] == char_name
+        )
 
     @classmethod
     def setUpClass(cls):
@@ -130,8 +138,8 @@ class TestCustomChar(TaskTestCase):
         self.assertIn(char_id, self.manager.get_all_characters())
         char_info = self.manager.get_character_info_by_id(char_id)
         assert char_info is not None
-        self.assertEqual(char_info["combo_id"], combo_id)
-        self.assertEqual(char_info["combo_name"], "combo_test")
+        self.assertEqual(char_info["impl_id"], combo_id)
+        self.assertEqual(self.manager.get_impl_name(char_info["impl_id"]), "combo_test")
 
         # 刪除 Combo 檢查
         self.manager.delete_combo(combo_id)
@@ -167,7 +175,7 @@ class TestCustomChar(TaskTestCase):
             task=self.task,
             index=0,
             char_id=char_id,
-            combo_id=combo_id,
+            impl_id=combo_id,
         )
         self.assertTrue(len(char.parsed_combo) > 0)
 
@@ -213,7 +221,7 @@ class TestCustomChar(TaskTestCase):
         tab.on_unbind_combo()
         char_ui_info = self.manager.get_character_info_by_id(char_ui_id)
         assert char_ui_info is not None
-        self.assertEqual(char_ui_info["combo_id"], "")
+        self.assertEqual(char_ui_info["impl_id"], "")
         # 解綁後，介面會刷新，combo_text 應顯示未綁定的提示文字
         self.assertEqual(tab.combo_text.toPlainText(), tab.tr_unbound_text)
 
@@ -286,23 +294,19 @@ class TestCustomChar(TaskTestCase):
 
     def test_builtin_combo_roundtrip(self):
         builtin_id = PREDEFINED_CHARACTER_ID
-        builtin_name = self.manager.get_combo_name(builtin_id)
+        builtin_name = self.manager.get_impl_name(builtin_id)
         builtin_display = f"{self.manager.get_builtin_prefix()}{builtin_name}"
 
-        self.assertTrue(self.manager.is_builtin_combo(builtin_id))
+        self.assertTrue(self.manager.is_builtin_impl(builtin_id))
         self.assertFalse(builtin_name.startswith(self.manager.get_builtin_prefix()))
 
         char_id = self.manager.create_character("char_builtin", builtin_id)
         char_info = self.manager.get_character_info_by_id(char_id)
         assert char_info is not None
-        self.assertEqual(char_info["combo_id"], builtin_id)
-        self.assertEqual(char_info["combo_name"], builtin_name)
+        self.assertEqual(char_info["impl_id"], builtin_id)
+        self.assertEqual(self.manager.get_impl_name(char_info["impl_id"]), builtin_name)
 
-        combos = self.manager.get_all_combos()
-        self.assertIn(builtin_name, combos)
-        self.assertNotIn(builtin_display, combos)
-
-        combo_items = self.manager.get_all_combo_items(with_builtin_prefix=True)
+        combo_items = self.manager.get_all_impl_items(with_builtin_prefix=True)
         self.assertIn((builtin_display, builtin_id), combo_items)
 
     def test_migrate_legacy_builtin_combo_name(self):
@@ -310,7 +314,7 @@ class TestCustomChar(TaskTestCase):
 
         legacy_label = (
             f"{self.manager.get_builtin_prefix()}"
-            f"{self.manager.get_combo_name(PREDEFINED_CHARACTER_ID)}"
+            f"{self.manager.get_impl_name(PREDEFINED_CHARACTER_ID)}"
         )
         with open(manager_module.DB_PATH, "w", encoding="utf-8") as f:
             json.dump(
@@ -327,51 +331,27 @@ class TestCustomChar(TaskTestCase):
 
         CustomCharManager._instance = None
         migrated_manager = CustomCharManager()
-        migrated_char_id = migrated_manager._find_character_id_by_name("legacy_char")
+        migrated_char_id = self._character_id_by_name(migrated_manager, "legacy_char")
         migrated_info = migrated_manager.get_character_info_by_id(migrated_char_id)
         assert migrated_info is not None
-        self.assertEqual(migrated_info["combo_id"], PREDEFINED_CHARACTER_ID)
+        self.assertEqual(migrated_info["impl_id"], PREDEFINED_CHARACTER_ID)
 
     def test_char_factory_uses_builtin_id_without_ui_import(self):
-        from src.char.CharFactory import _build_char_instance
+        from src.char.core.CharFactory import _build_char_instance
         from src.char.Zero import Zero
 
         char_id = self.manager.create_character("builtin_char", PREDEFINED_CHARACTER_ID)
         instance = _build_char_instance(self.task, 0, char_id, 0.95, self.manager)
         self.assertIsInstance(instance, Zero)
         self.assertEqual(instance.char_name, "builtin_char")
-        self.assertEqual(
-            instance.combo_name,
-            self.manager.get_combo_name(PREDEFINED_CHARACTER_ID, with_builtin_prefix=True),
-        )
-        self.assertTrue(instance.builtin)
+        self.assertEqual(instance.impl_id, PREDEFINED_CHARACTER_ID)
 
-    def test_builtin_combo_name_stays_clean_and_ui_prefix_is_display_only(self):
-        class FakeA:
-            pass
-
-        class FakeB:
-            pass
-
-        class FakeC:
-            pass
-
-        fake_entries = {
-            "char_a": {"cls": FakeA, "cn_name": "重名"},
-            "char_b": {"cls": FakeB, "cn_name": "重名"},
-            "char_c": {"cls": FakeC, "cn_name": "唯一名"},
-        }
-
-        with (
-            patch.object(CustomCharManager, "_builtin_entries", return_value=fake_entries),
-            patch.object(CustomCharManager, "_locale_name", return_value="zh_CN"),
-        ):
-            self.assertEqual(self.manager.get_combo_name("char_a"), "重名")
-            self.assertEqual(self.manager.get_combo_name("char_b"), "重名")
-            self.assertEqual(self.manager.get_combo_name("char_c"), "唯一名")
+    def test_builtin_impl_name_uses_metadata_and_ui_prefix_is_display_only(self):
+        with patch.object(CustomCharManager, "_locale_name", return_value="zh_CN"):
+            self.assertEqual(self.manager.get_impl_name(PREDEFINED_CHARACTER_ID), "零")
             self.assertEqual(
-                self.manager.get_combo_name("char_c", with_builtin_prefix=True),
-                "[内置代码] 唯一名",
+                self.manager.get_impl_name(PREDEFINED_CHARACTER_ID, with_builtin_prefix=True),
+                "[内置代码] 零",
             )
 
 

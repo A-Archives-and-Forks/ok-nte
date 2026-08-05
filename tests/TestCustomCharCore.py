@@ -10,7 +10,7 @@ from src.char.custom.CustomCharDb import DB_SCHEMA_VERSION, CustomCharDb
 from src.char.custom.CustomCharDbMigrator import CustomCharDbMigrator, MigrationContext
 from src.char.custom.CustomCharManager import CustomCharManager
 
-PREDEFINED_CHARACTER_ID = "char_zero"
+PREDEFINED_CHARACTER_ID = "builtin:zero"
 
 
 class TestCustomCharCore(unittest.TestCase):
@@ -48,6 +48,14 @@ class TestCustomCharCore(unittest.TestCase):
         with open(self.db_path, encoding="utf-8") as file:
             return json.load(file)
 
+    @staticmethod
+    def _character_id_by_name(manager, char_name):
+        return next(
+            char_id
+            for char_id, info in manager.get_all_characters().items()
+            if info["char_name"] == char_name
+        )
+
     def test_db_schema_migrates_legacy_combo_name(self):
         legacy = {
             "schema_version": 3,
@@ -69,14 +77,14 @@ class TestCustomCharCore(unittest.TestCase):
         self.assertTrue(combo_id.startswith("combo_"))
         raw = next(iter(persisted["characters"].values()))
         self.assertEqual(raw["name"], "char_legacy")
-        self.assertEqual(raw["combo_id"], combo_id)
+        self.assertEqual(raw["impl_id"], combo_id)
         self.assertNotIn("combo_name", raw)
         self.assertNotIn("combo_ref", raw)
 
-        info = manager.get_character_info_by_id(manager._find_character_id_by_name("char_legacy"))
+        info = manager.get_character_info_by_id(self._character_id_by_name(manager, "char_legacy"))
         self.assertIsNotNone(info)
-        self.assertEqual(info["combo_id"], combo_id)
-        self.assertEqual(info["combo_name"], "combo_old")
+        self.assertEqual(info["impl_id"], combo_id)
+        self.assertEqual(manager.get_impl_name(info["impl_id"]), "combo_old")
         self.assertNotIn("combo_ref", info)
 
     def test_db_schema_migrates_legacy_builtin_label(self):
@@ -89,7 +97,7 @@ class TestCustomCharCore(unittest.TestCase):
         self._write_db(bootstrap)
         manager = CustomCharManager()
         legacy_builtin_label = (
-            f"{manager.get_builtin_prefix()}{manager.get_combo_name(PREDEFINED_CHARACTER_ID)}"
+            f"{manager.get_builtin_prefix()}{manager.get_impl_name(PREDEFINED_CHARACTER_ID)}"
         )
 
         legacy = {
@@ -107,9 +115,9 @@ class TestCustomCharCore(unittest.TestCase):
         CustomCharManager._instance = None
 
         manager = CustomCharManager()
-        info = manager.get_character_info_by_id(manager._find_character_id_by_name("char_builtin"))
+        info = manager.get_character_info_by_id(self._character_id_by_name(manager, "char_builtin"))
         self.assertIsNotNone(info)
-        self.assertEqual(info["combo_id"], PREDEFINED_CHARACTER_ID)
+        self.assertEqual(info["impl_id"], PREDEFINED_CHARACTER_ID)
         self.assertNotIn("combo_ref", info)
 
     def test_db_schema_remaps_custom_combo_key_conflicting_with_builtin(self):
@@ -133,11 +141,11 @@ class TestCustomCharCore(unittest.TestCase):
         self.assertTrue(manager.is_custom_combo_exist(remapped_key))
         self.assertEqual(manager.get_combo(remapped_key), "skill,wait(0.1)")
 
-        info = manager.get_character_info_by_id(manager._find_character_id_by_name("char_conflict"))
+        info = manager.get_character_info_by_id(self._character_id_by_name(manager, "char_conflict"))
         self.assertIsNotNone(info)
-        self.assertEqual(info["combo_id"], remapped_key)
+        self.assertEqual(info["impl_id"], remapped_key)
         self.assertNotIn("combo_ref", info)
-        self.assertEqual(manager.get_combo(info["combo_id"]), "skill,wait(0.1)")
+        self.assertEqual(manager.get_combo(info["impl_id"]), "skill,wait(0.1)")
 
     def test_validate_combo_syntax_reports_line_and_column(self):
         is_valid, error = CustomChar.validate_combo_syntax("skill,wait(0.5)")
@@ -357,7 +365,7 @@ class TestCustomCharCore(unittest.TestCase):
             "skill\nif ultimate: wait(0.1)\narc",
         )
         self.assertEqual(manager.get_combo("combo_b"), "l_click(2)")
-        with open(f"{self.db_path}.pre-v6.bak", encoding="utf-8") as file:
+        with open(f"{self.db_path}.pre-v7.bak", encoding="utf-8") as file:
             self.assertEqual(json.load(file), legacy)
 
         CustomCharManager._instance = None
@@ -405,7 +413,7 @@ class TestCustomCharCore(unittest.TestCase):
             "combos": {},
             "characters": {
                 "char_a": {
-                    "combo_id": "",
+                    "impl_id": "",
                     "feature_ids": [existing_fid, missing_fid],
                 }
             },
@@ -418,7 +426,7 @@ class TestCustomCharCore(unittest.TestCase):
 
         manager = CustomCharManager()
 
-        char_info = manager.get_character_info_by_id(manager._find_character_id_by_name("char_a"))
+        char_info = manager.get_character_info_by_id(self._character_id_by_name(manager, "char_a"))
         self.assertIsNotNone(char_info)
         self.assertEqual(char_info["feature_ids"], [existing_fid])
         persisted = self._read_persisted_db()
@@ -440,7 +448,7 @@ class TestCustomCharCore(unittest.TestCase):
         self.assertEqual(duplicate_id, char_id)
         self.assertEqual(blank_id, "")
 
-        id_custom = manager._find_character_id_by_name("custom hero")
+        id_custom = self._character_id_by_name(manager, "custom hero")
 
         self.assertEqual(id_custom, char_id)
         self.assertEqual(manager.get_character_info_by_id(id_custom)["char_name"], "custom hero")
@@ -455,15 +463,14 @@ class TestCustomCharCore(unittest.TestCase):
 
         self.assertEqual(info["char_id"], char_id)
         self.assertEqual(info["char_name"], "fixed shape")
-        self.assertEqual(info["combo_id"], "")
-        self.assertEqual(info["combo_name"], "")
+        self.assertEqual(info["impl_id"], "")
         self.assertEqual(info["feature_ids"], [])
         self.assertNotIn("name", info)
 
         self.assertIsNone(missing)
 
     def test_char_factory_loads_custom_char_metadata_by_id(self):
-        from src.char.CharFactory import _build_char_instance
+        from src.char.core.CharFactory import _build_char_instance
 
         manager = CustomCharManager()
         combo_id = manager.add_combo("combo_runtime", "skill, wait(0.1)")
@@ -473,8 +480,7 @@ class TestCustomCharCore(unittest.TestCase):
 
         self.assertIsInstance(char, CustomChar)
         self.assertEqual(char.char_name, "runtime hero")
-        self.assertEqual(char.combo_id, combo_id)
-        self.assertEqual(char.combo_name, "combo_runtime")
+        self.assertEqual(char.impl_id, combo_id)
         self.assertEqual([command[0] for command in char.parsed_combo], ["skill", "wait"])
 
     def test_fixed_team_migrates_combo_ref_to_combo_id(self):
@@ -503,14 +509,14 @@ class TestCustomCharCore(unittest.TestCase):
                 break
         self.assertNotEqual(char_id, "")
         self.assertEqual(fixed_team["slots"][0]["char_id"], char_id)
-        self.assertEqual(fixed_team["slots"][0]["combo_id"], PREDEFINED_CHARACTER_ID)
+        self.assertEqual(fixed_team["slots"][0]["impl_id"], PREDEFINED_CHARACTER_ID)
         self.assertNotIn("combo_ref", fixed_team["slots"][0])
 
     def test_migrator_converts_in_memory_without_file_io(self):
         context = MigrationContext(
-            is_builtin_combo=lambda _combo_id: False,
+            is_builtin_impl=lambda _impl_id: False,
             get_builtin_prefix=lambda: "[内置代码] ",
-            iter_builtin_combo_items=lambda: [],
+            iter_builtin_impl_items=lambda: [],
             generate_combo_id=lambda existing: f"combo_{len(existing or set())}",
         )
         source = {
@@ -529,9 +535,9 @@ class TestCustomCharCore(unittest.TestCase):
 
     def test_migrator_converts_legacy_layout_and_builtin_reference(self):
         context = MigrationContext(
-            is_builtin_combo=lambda combo_id: combo_id == PREDEFINED_CHARACTER_ID,
+            is_builtin_impl=lambda impl_id: impl_id == PREDEFINED_CHARACTER_ID,
             get_builtin_prefix=lambda: "[内置代码] ",
-            iter_builtin_combo_items=lambda: [("Zero", PREDEFINED_CHARACTER_ID)],
+            iter_builtin_impl_items=lambda: [("Zero", PREDEFINED_CHARACTER_ID)],
             generate_combo_id=lambda existing: f"combo_{len(existing or set())}",
         )
         source = {
@@ -549,12 +555,12 @@ class TestCustomCharCore(unittest.TestCase):
 
         self.assertEqual(result.db["schema_version"], DB_SCHEMA_VERSION)
         self.assertEqual(result.db["combos"]["combo_0"]["content"], "skill")
-        self.assertEqual(result.db["characters"]["char_0001"]["combo_id"], "combo_0")
+        self.assertEqual(result.db["characters"]["char_0001"]["impl_id"], "combo_0")
         self.assertEqual(
             result.db["fixed_team"]["slots"][0],
             {
                 "char_id": "char_0001",
-                "combo_id": PREDEFINED_CHARACTER_ID,
+                "impl_id": PREDEFINED_CHARACTER_ID,
             },
         )
 
