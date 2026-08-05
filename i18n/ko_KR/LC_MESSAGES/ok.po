@@ -1251,3 +1251,6 @@ msgstr "[외장 코드]"
 
 msgid "打开外置代码目录"
 msgstr "외부 코드 폴더 열기"
+
+msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。"
+msgstr "Python 코드를 수동으로 추가하거나 수정한 후에는 [{refresh}] 버튼을 클릭하여 적용하세요."

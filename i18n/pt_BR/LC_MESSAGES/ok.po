@@ -976,3 +976,6 @@ msgstr "[Código externo]"
 
 msgid "打开外置代码目录"
 msgstr "Abrir pasta de código externo"
+
+msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。"
+msgstr "Após adicionar ou modificar o código Python manualmente, clique no botão [{refresh}] para aplicar as alterações."
