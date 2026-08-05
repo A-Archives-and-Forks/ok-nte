@@ -24,6 +24,7 @@ logger = Logger.get_logger(__name__)
 CUSTOM_CHARS_DIR = get_path_relative_to_exe("custom_chars")
 FEATURES_DIR = get_path_relative_to_exe("custom_chars", "features")
 DB_PATH = get_path_relative_to_exe("custom_chars", "db.json")
+EXTERNAL_CHARS_DIR = get_path_relative_to_exe("custom_chars", "external_chars")
 
 
 class CustomCharManager:
@@ -86,6 +87,21 @@ class CustomCharManager:
         if app and hasattr(app, "tr"):
             return f"{app.tr('[内置代码]')} "
         return "[内置代码] "
+
+    @staticmethod
+    def get_external_prefix() -> str:
+        app = getattr(og, "app", None)
+        if app and hasattr(app, "tr"):
+            return f"{app.tr('[外置代码]')} "
+        return "[外置代码] "
+
+    @classmethod
+    def _get_impl_prefix(cls, source: str) -> str:
+        if source == "builtin":
+            return cls.get_builtin_prefix()
+        if source == "external":
+            return cls.get_external_prefix()
+        return ""
 
     @classmethod
     def is_builtin_impl(cls, impl_id: str) -> bool:
@@ -196,26 +212,27 @@ class CustomCharManager:
         """获取出招表"""
         return self._db.get_combo(combo_id)
 
-    def get_impl_name(self, impl_id: str, with_builtin_prefix=False) -> str:
+    def get_impl_name(self, impl_id: str, with_source_prefix=False) -> str:
         impl_id = "" if impl_id is None else str(impl_id)
         if not impl_id:
             return ""
-        name = self.get_registered_impl_name(impl_id)
-        if name:
-            if with_builtin_prefix and self.is_builtin_impl(impl_id):
-                return f"{self.get_builtin_prefix()}{name}"
-            return name
+        for entry in self._implementation_entries():
+            if entry.impl_id == impl_id:
+                name = entry.display_name(self._locale_name())
+                return (
+                    f"{self._get_impl_prefix(entry.source)}{name}" if with_source_prefix else name
+                )
         return self._db.get_custom_combo_name(impl_id) or impl_id
 
-    def get_all_impl_items(self, with_builtin_prefix=False):
+    def get_all_impl_items(self, with_source_prefix=False):
         """
         Return combo options as (name, id) tuples for UI binding.
         """
         items = self._db.get_custom_combo_items()
         for entry in self._implementation_entries():
             impl_name = self.get_registered_impl_name(entry.impl_id)
-            if with_builtin_prefix and entry.source == "builtin":
-                impl_name = f"{self.get_builtin_prefix()}{impl_name}"
+            if with_source_prefix:
+                impl_name = f"{self._get_impl_prefix(entry.source)}{impl_name}"
             items.append((impl_name, entry.impl_id))
         return items
 

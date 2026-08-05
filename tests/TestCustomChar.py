@@ -3,8 +3,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-from PySide6.QtWidgets import QApplication
 from ok.test.TaskTestCase import TaskTestCase
+from PySide6.QtWidgets import QApplication
 
 from src.char.custom.CustomChar import CustomChar
 from src.char.custom.CustomCharDb import CustomCharDb
@@ -122,7 +122,8 @@ class TestCustomChar(TaskTestCase):
         # 刪除沙盒環境中的圖片與 DB
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-        # 拔除單例快取，這確保開發中或測試結束後，原本環境要讀 CustomCharManager 都能載入正式的 custom_chars
+        # 拔除單例快取，這確保開發中或測試結束後
+        # 原本環境要讀 CustomCharManager 都能載入正式的 custom_chars
         CustomCharManager._instance = None
         CustomCharDb.reset_instance()
 
@@ -306,7 +307,7 @@ class TestCustomChar(TaskTestCase):
         self.assertEqual(char_info["impl_id"], builtin_id)
         self.assertEqual(self.manager.get_impl_name(char_info["impl_id"]), builtin_name)
 
-        combo_items = self.manager.get_all_impl_items(with_builtin_prefix=True)
+        combo_items = self.manager.get_all_impl_items(with_source_prefix=True)
         self.assertIn((builtin_display, builtin_id), combo_items)
 
     def test_migrate_legacy_builtin_combo_name(self):
@@ -350,7 +351,7 @@ class TestCustomChar(TaskTestCase):
         with patch.object(CustomCharManager, "_locale_name", return_value="zh_CN"):
             self.assertEqual(self.manager.get_impl_name(PREDEFINED_CHARACTER_ID), "零")
             self.assertEqual(
-                self.manager.get_impl_name(PREDEFINED_CHARACTER_ID, with_builtin_prefix=True),
+                self.manager.get_impl_name(PREDEFINED_CHARACTER_ID, with_source_prefix=True),
                 "[内置代码] 零",
             )
 

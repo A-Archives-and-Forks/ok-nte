@@ -98,8 +98,8 @@ class CharManagerTab(CustomTab):
             "当前未绑定任何{combo}。\n遇到此角色将默认使用基础通用脚本(BaseChar)。",
             combo=COMBO,
         )
-        self.tr_builtin_text = og.app.tr(
-            "此为内建 Python 脚本，不可在此修改。\n请在对应的源文件中直接修改代码。"
+        self.tr_code_impl_text = og.app.tr(
+            "此为 Python 脚本，不可在此修改。\n请在对应的源文件中直接修改代码。"
         )
         self.tr_no_match_cmd = og.app.tr("没有找到匹配的指令。")
 
@@ -449,7 +449,7 @@ class CharManagerTab(CustomTab):
     def _reload_combo_options(self):
         self.combo_select.blockSignals(True)
         self.combo_select.clear()
-        for combo_name, combo_id in self.manager.get_all_impl_items(with_builtin_prefix=True):
+        for combo_name, combo_id in self.manager.get_all_impl_items(with_source_prefix=True):
             self.combo_select.addItem(combo_name, userData=combo_id)
         self.combo_select.setCurrentIndex(-1)
         self.combo_select.blockSignals(False)
@@ -466,7 +466,7 @@ class CharManagerTab(CustomTab):
         return ""
 
     def _set_combo_selection_by_id(self, combo_id: str):
-        combo_name = self.manager.get_impl_name(combo_id, with_builtin_prefix=True)
+        combo_name = self.manager.get_impl_name(combo_id, with_source_prefix=True)
         self.combo_select.blockSignals(True)
         idx = self.combo_select.findData(combo_id)
         if idx >= 0:
@@ -489,7 +489,7 @@ class CharManagerTab(CustomTab):
         self.title_h_layout.invalidate()
         self.char_name_edit_btn.show()
         combo_id = char_info["impl_id"]
-        combo_name = self.manager.get_impl_name(combo_id, with_builtin_prefix=True)
+        combo_name = self.manager.get_impl_name(combo_id, with_source_prefix=True)
         self._set_combo_selection_by_id(combo_id)
 
         # Manually trigger the text change logic to ensure built-in warnings render
@@ -539,14 +539,14 @@ class CharManagerTab(CustomTab):
         if combo_id is None:
             combo_id = self._resolve_combo_id(combo_name)
 
-        is_builtin = self.manager.is_builtin_impl(combo_id)
-        if is_builtin:
-            self.combo_text.setText(self.tr_builtin_text)
+        is_code_impl = self.manager.is_registered_impl(combo_id)
+        if is_code_impl:
+            self.combo_text.setText(self.tr_code_impl_text)
             self.combo_text.setReadOnly(True)
             self.combo_text.setEnabled(False)
             self.combo_save_btn.setEnabled(self.current_char_id is not None)
             self.combo_unbind_btn.setEnabled(self.current_char_id is not None)
-            self.combo_delete_btn.setEnabled(False)  # Built-ins cannot be deleted
+            self.combo_delete_btn.setEnabled(False)  # Python implementations cannot be deleted here
             self.combo_test_btn.setEnabled(getattr(og.app, "debug", False))
             self.combo_select.setReadOnly(False)
             return
@@ -571,9 +571,9 @@ class CharManagerTab(CustomTab):
     def on_test_combo(self):
         combo_input = self.combo_select.currentText().strip()
         combo_id = self._resolve_combo_id(combo_input)
-        is_builtin = self.manager.is_builtin_impl(combo_id)
+        is_code_impl = self.manager.is_registered_impl(combo_id)
 
-        if not is_builtin:
+        if not is_code_impl:
             combo_content = self.combo_text.toPlainText().strip()
             if not combo_content:
                 return
@@ -649,17 +649,17 @@ class CharManagerTab(CustomTab):
         combo_input = self.combo_select.currentText().strip()
         combo_content = self.combo_text.toPlainText().strip()
         combo_id = self._resolve_combo_id(combo_input)
-        combo_name = self.manager.get_impl_name(combo_id, with_builtin_prefix=True)
+        combo_name = self.manager.get_impl_name(combo_id, with_source_prefix=True)
         if not combo_name:
             combo_name = combo_input
 
-        is_builtin = self.manager.is_builtin_impl(combo_id)
+        is_code_impl = self.manager.is_registered_impl(combo_id)
 
-        if is_builtin and not self.current_char_id:
+        if is_code_impl and not self.current_char_id:
             return
 
         if combo_input:
-            if not is_builtin:
+            if not is_code_impl:
                 from src.char.custom.CustomChar import CustomChar
 
                 is_valid, error = CustomChar.validate_combo_syntax(combo_content)
@@ -806,7 +806,7 @@ class CharManagerTab(CustomTab):
     def on_delete_combo(self):
         combo_name = self.combo_select.currentText().strip()
         combo_id = self._resolve_combo_id(combo_name)
-        if not combo_id or self.manager.is_builtin_impl(combo_id):
+        if not combo_id or self.manager.is_registered_impl(combo_id):
             return
 
         self.manager.delete_combo(combo_id)

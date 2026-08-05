@@ -3,11 +3,12 @@ import os
 import shutil
 import tempfile
 import unittest
+from pathlib import Path
 
-from src.char.Zero import Zero
-from src.char.core.CharRegistry import char_registry
+from src.char.core.CharRegistry import CharRegistry, char_registry
 from src.char.custom.CustomCharDb import DB_SCHEMA_VERSION, CustomCharDb
 from src.char.custom.CustomCharDbMigrator import MigrationContext
+from src.char.Zero import Zero
 
 
 class TestCharImplDb(unittest.TestCase):
@@ -61,6 +62,26 @@ class TestCharImplDb(unittest.TestCase):
         self.assertIsNotNone(entry)
         self.assertIs(entry.char_cls, Zero)
         self.assertEqual(entry.cn_name, "零")
+
+    def test_external_registry_generates_id_from_class_name(self):
+        external_dir = Path(self.temp_dir) / "external_chars"
+        external_dir.mkdir()
+        (external_dir / "hero.py").write_text(
+            "from src.char.BaseChar import BaseChar, Element\n"
+            "\n"
+            "class FutureHero(BaseChar):\n"
+            "    cn_name = '外置英雄'\n"
+            "    en_name = 'Future Hero'\n"
+            "    element = Element.PURPLE\n",
+            encoding="utf-8",
+        )
+
+        entry = CharRegistry(external_dir=external_dir).get("external:futurehero")
+
+        self.assertIsNotNone(entry)
+        self.assertEqual(entry.source, "external")
+        self.assertEqual(entry.char_cls.__name__, "FutureHero")
+        self.assertEqual(entry.display_name("zh_CN"), "外置英雄")
 
 
 if __name__ == "__main__":
