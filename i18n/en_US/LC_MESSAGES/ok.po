@@ -1252,5 +1252,5 @@ msgstr "[External Code]"
 msgid "打开外置代码目录"
 msgstr "Open External Code Folder"
 
-msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。"
-msgstr "After manually adding or modifying Python code, click the [{refresh}] button to apply changes."
+msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>。"
+msgstr "After manually adding or modifying Python code, click the [{refresh}] button for changes to take effect.<br>For a guide on writing character combo tables, please refer to the <a href='{doc_url}'>documentation</a>."

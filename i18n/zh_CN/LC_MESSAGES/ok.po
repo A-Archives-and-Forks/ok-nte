@@ -1235,5 +1235,5 @@ msgstr ""
 msgid "打开外置代码目录"
 msgstr ""
 
-msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。"
-msgstr "手动添加或修改 Python 代码后，需点击 [{refresh}] 按钮以生效。"
+msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>。"
+msgstr ""

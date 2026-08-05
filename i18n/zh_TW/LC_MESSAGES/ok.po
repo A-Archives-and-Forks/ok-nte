@@ -1252,5 +1252,5 @@ msgstr "[外置代碼]"
 msgid "打开外置代码目录"
 msgstr "開啟外置程式碼目錄"
 
-msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。"
-msgstr "手動新增或修改 Python 程式碼後，需點擊 [{refresh}] 按鈕以生效。"
+msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>。"
+msgstr "手動新增或修改 Python 程式碼後，需點擊 [{refresh}] 按鈕以生效。<br>關於編寫角色出招表的指南，請參考 <a href='{doc_url}'>文件</a>。"
