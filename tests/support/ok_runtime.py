@@ -139,6 +139,9 @@ def install_ok_test_runtime_isolation() -> None:
 
 def reset_ok_runtime_state() -> None:
     """Clear ok-script process globals that leak between TaskTestCase classes."""
+    from src.utils.visual_template_cache import reset_visual_template_cache_for_tests
+
+    reset_visual_template_cache_for_tests()
     ExitEvent.queues = set()
     ExitEvent.to_stops = set()
     _ok.OK.exit_event = ExitEvent()
