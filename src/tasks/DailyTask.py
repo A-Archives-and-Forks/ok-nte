@@ -148,14 +148,14 @@ class DailyTask(NTEOneTimeTask, BaseNTETask):
                 self.complete_daily_activities,
             ),
             (
-                self.CONF_CLAIM_ACTIVITY,
-                self._task_enabled(self.CONF_CLAIM_ACTIVITY, True),
-                self.claim_activity_rewards,
-            ),
-            (
                 self.CONF_COFFEE_TASK,
                 self._task_enabled(self.CONF_COFFEE_TASK, self.TASK_NONE, self.TASK_NONE),
                 self.run_coffee_task,
+            ),
+            (
+                self.CONF_CLAIM_ACTIVITY,
+                self._task_enabled(self.CONF_CLAIM_ACTIVITY, True),
+                self.claim_activity_rewards,
             ),
             (
                 self.CONF_CLAIM_BP,
