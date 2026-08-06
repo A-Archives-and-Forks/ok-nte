@@ -133,11 +133,6 @@ class DailyTask(NTEOneTimeTask, BaseNTETask):
 
         tasks: List[Tuple[str, bool, Callable]] = [
             (
-                self.CONF_CINEMA_DATE,
-                self._task_enabled(self.CONF_CINEMA_DATE, False),
-                self.run_cinema_task,
-            ),
-            (
                 self.CONF_CLAIM_MAIL,
                 self._task_enabled(self.CONF_CLAIM_MAIL, True),
                 self.claim_mail,
