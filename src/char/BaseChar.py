@@ -575,6 +575,7 @@ class BaseChar:
                     return "continue"
             self.logger.debug(f"{action_type} not available break")
             return "released" if result["clicked"] else "unavailable"
+        self.sleep(0.01)
         result["animation_pending_start"] = 0
         return "continue"
 

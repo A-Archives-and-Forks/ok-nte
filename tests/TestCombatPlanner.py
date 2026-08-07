@@ -1126,6 +1126,99 @@ class TestCombatPlanner(unittest.TestCase):
         self.assertEqual(char.ultimate_clicked, 1)
         self.assertEqual(result.name, "api_char_ultimate")
 
+    def test_entry_flow_repeat_for_entry_runs_action_again(self):
+        task = FakeTask()
+
+        def plan(source, context):
+            skill = source.click_skill_action(name="skill")
+            ultimate = source.click_ultimate_action(name="ultimate")
+
+            def entry():
+                yield skill
+                ultimate_result = yield ultimate
+                if ultimate_result:
+                    yield skill.repeat_for_entry()
+
+            return CombatPlan([skill, ultimate], entry=entry)
+
+        char = PublicApiChar(task, 0, "api_char", plan)
+        task.chars = [char]
+        planner = CombatPlanner(task)
+        planner.reset([char])
+
+        result = planner.perform_current_char(char)
+
+        self.assertEqual(char.skill_clicked, 2)
+        self.assertEqual(char.ultimate_clicked, 1)
+        self.assertEqual(result.name, "skill")
+
+    def test_repeat_for_entry_retries_action_after_failure(self):
+        task = FakeTask()
+        attempts = []
+
+        def plan(source, context):
+            skill = ActionIntent(
+                name="skill",
+                tags={ActionTag.SKILL_ACTION},
+                slot=ActionSlot.SKILL,
+                execute=lambda _: attempts.append("skill") or len(attempts) == 2,
+            )
+            ultimate = source.click_ultimate_action(name="ultimate")
+
+            def entry():
+                ultimate_result = yield ultimate
+                while ultimate_result:
+                    skill_result = yield skill.repeat_for_entry()
+                    if skill_result:
+                        return
+
+            return CombatPlan([skill, ultimate], entry=entry)
+
+        char = PublicApiChar(task, 0, "api_char", plan)
+        task.chars = [char]
+        planner = CombatPlanner(task)
+        planner.reset([char])
+
+        result = planner.perform_current_char(char)
+
+        self.assertEqual(attempts, ["skill", "skill"])
+        self.assertEqual(char.ultimate_clicked, 1)
+        self.assertTrue(result.success)
+
+    def test_entry_flow_yielded_action_respects_slot_reservation(self):
+        task = FakeTask()
+        source = FakeChar(0, "source")
+
+        def plan(source, context):
+            skill = source.click_skill_action(name="skill")
+            ultimate = source.click_ultimate_action(name="ultimate")
+
+            def entry():
+                ultimate_result = yield ultimate
+                if ultimate_result:
+                    yield skill.repeat_for_entry()
+
+            return CombatPlan([skill, ultimate], entry=entry)
+
+        char = PublicApiChar(task, 1, "api_char", plan)
+        task.chars = [source, char]
+        planner = CombatPlanner(task)
+        planner.reset([source, char])
+        self._publish(
+            planner,
+            source,
+            lambda context: context.reserve_actions(
+                [ActionReservation.for_action(char, ActionSlot.SKILL)],
+                reason="hold ultimate skill",
+                until=NEVER_EXPIRES,
+            ),
+        )
+        result = planner.perform_current_char(char)
+
+        self.assertEqual(char.ultimate_clicked, 1)
+        self.assertEqual(char.skill_clicked, 0)
+        self.assertFalse(result.success)
+
     def test_action_result_bool_reflects_success(self):
         task = FakeTask()
         action = ActionIntent(
@@ -1182,6 +1275,41 @@ class TestCombatPlanner(unittest.TestCase):
 
         self.assertEqual(target.skill_clicked, 1)
         self.assertEqual(result.name, "target_skill")
+
+    def test_context_is_action_allowed_checks_can_execute_and_reservation(self):
+        enabled = {"value": False}
+        task = FakeTask()
+        source = PublicApiChar(task, 0, "source", lambda source, _: source.plan())
+        target = PublicApiChar(
+            task,
+            1,
+            "target",
+            lambda source, _: source.plan(
+                source.click_skill_action(can_execute=lambda _: enabled["value"])
+            ),
+        )
+        task.chars = [source, target]
+        planner = CombatPlanner(task)
+        planner.reset([source, target])
+        context = planner.context_for(target)
+        action = target.combat_plan(context).actions[0]
+
+        self.assertFalse(context.is_action_allowed(target, action))
+
+        enabled["value"] = True
+        self.assertTrue(context.is_action_allowed(target, action))
+
+        self._publish(
+            planner,
+            source,
+            lambda source_context: source_context.reserve_actions(
+                [ActionReservation.for_action(target, ActionSlot.SKILL)],
+                reason="hold target skill",
+                until=NEVER_EXPIRES,
+            ),
+        )
+
+        self.assertFalse(context.is_action_allowed(target, action))
 
     def test_planner_action_slot_respects_reservation(self):
         expired = {"value": False}
