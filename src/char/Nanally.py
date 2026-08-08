@@ -3,6 +3,7 @@ import time
 from src.char.BaseChar import BaseChar
 from src.combat.planner import (
     ActionIntent,
+    CombatContext,
     Planner,
     RoleProfile,
 )
@@ -33,7 +34,7 @@ class Nanally(BaseChar):
 
             ultimate_result = yield ultimate
             if ultimate_result:
-                yield from self.perform_in_ult(skill)
+                self.perform_in_ult(context, skill)
 
         return self.plan(
             skill,
@@ -41,14 +42,14 @@ class Nanally(BaseChar):
             entry=entry,
         )
 
-    def perform_in_ult(self, skill: "ActionIntent"):
+    def perform_in_ult(self, context: CombatContext, skill: ActionIntent):
         start = time.time()
         skill_used = False
         while (elapsed := time.time() - start) < 6:
             if elapsed > 1 and not self.ultimate_available(False):
                 break
-            if not skill_used:
-                skill_used = bool((yield skill.repeat_for_entry()))
+            if not skill_used and context.is_action_allowed(self, skill):
+                skill_used = self.click_skill()
             self.normal_attack()
             self.sleep(0.2)
         return skill_used

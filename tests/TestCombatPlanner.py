@@ -1,7 +1,9 @@
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from src.char.BaseChar import BaseChar
+from src.char.Nanally import Nanally
 from src.combat.planner import (
     NEVER_EXPIRES,
     ActionIntent,
@@ -113,22 +115,25 @@ class FakeChar:
             slot = ActionSlot.SKILL
         elif ActionTag.ULTIMATE_ACTION in self._tags:
             slot = ActionSlot.ULTIMATE
-        return self._plan_from_plan_items([
-            ActionIntent(
-                name=f"{self.name}_action",
-                tags=set(self._tags),
-                execute=lambda _: ActionResult(
+        return self._plan_from_plan_items(
+            [
+                ActionIntent(
                     name=f"{self.name}_action",
-                    success=True,
                     tags=set(self._tags),
+                    execute=lambda _: ActionResult(
+                        name=f"{self.name}_action",
+                        success=True,
+                        tags=set(self._tags),
+                        slot=slot,
+                    ),
                     slot=slot,
-                ),
-                slot=slot,
-                reason=f"{self.name} available",
-                can_execute=self._can_execute,
-                priority_ready=self._priority_ready,
-            )
-        ] + list(claims))
+                    reason=f"{self.name} available",
+                    can_execute=self._can_execute,
+                    priority_ready=self._priority_ready,
+                )
+            ]
+            + list(claims)
+        )
 
     def _plan_from_plan_items(self, plan_items):
         actions = []
@@ -252,12 +257,12 @@ class TestCombatPlanner(unittest.TestCase):
         def combat_plan(_):
             return CombatPlan(
                 actions=[
-                ActionIntent(
-                    name="publish_test_request",
-                    tags={ActionTag.DEFAULT_ACTION},
-                    execute=execute,
-                    reason="publish test request",
-                )
+                    ActionIntent(
+                        name="publish_test_request",
+                        tags={ActionTag.DEFAULT_ACTION},
+                        execute=execute,
+                        reason="publish test request",
+                    )
                 ]
             )
 
@@ -1020,12 +1025,14 @@ class TestCombatPlanner(unittest.TestCase):
                     name="first",
                     tags={ActionTag.SKILL_ACTION},
                     slot=ActionSlot.SKILL,
-                    execute=lambda _: calls.append("first")
-                    or ActionResult(
-                        name="first",
-                        success=True,
-                        tags={ActionTag.DEFAULT_ACTION},
-                        slot=ActionSlot.SKILL,
+                    execute=lambda _: (
+                        calls.append("first")
+                        or ActionResult(
+                            name="first",
+                            success=True,
+                            tags={ActionTag.DEFAULT_ACTION},
+                            slot=ActionSlot.SKILL,
+                        )
                     ),
                 ),
                 self._action(
@@ -1184,6 +1191,28 @@ class TestCombatPlanner(unittest.TestCase):
         self.assertEqual(attempts, ["skill", "skill"])
         self.assertEqual(char.ultimate_clicked, 1)
         self.assertTrue(result.success)
+
+    def test_nanally_ultimate_loop_retries_skill_without_yielding_entry_actions(self):
+        task = FakeTask()
+        nanally = Nanally(task, 0, char_id="nanally")
+        context = type(
+            "AllowedContext",
+            (),
+            {"is_action_allowed": lambda _, char, action: True},
+        )()
+        skill = ActionIntent(name="skill", tags=set(), execute=lambda _: True)
+        skill_results = iter([False, True])
+        normal_attacks = []
+        nanally.skill_available = lambda: True
+        nanally.click_skill = lambda: next(skill_results)
+        nanally.normal_attack = lambda: normal_attacks.append("normal")
+        nanally.sleep = lambda _: None
+
+        with patch("src.char.Nanally.time.time", side_effect=[0, 0, 0.2, 6]):
+            result = nanally.perform_in_ult(context, skill)
+
+        self.assertTrue(result)
+        self.assertEqual(normal_attacks, ["normal", "normal"])
 
     def test_entry_flow_yielded_action_respects_slot_reservation(self):
         task = FakeTask()
@@ -2359,10 +2388,9 @@ class TestCombatPlanner(unittest.TestCase):
         target = FakeChar(
             1,
             "target",
-            switch_in_guard=lambda context, from_char, has_intro: calls.append(
-                (context.current_char, from_char, has_intro)
-            )
-            or SwitchInGuard.allow(),
+            switch_in_guard=lambda context, from_char, has_intro: (
+                calls.append((context.current_char, from_char, has_intro)) or SwitchInGuard.allow()
+            ),
         )
         planner = self._planner([current, target])
 
