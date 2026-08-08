@@ -9,8 +9,8 @@ from src.combat.planner import (
 SKILL_SHORT_TIMEOUT = 2.0
 
 
-class Yi(BaseChar):
-    """Yi - YELLOW sub DPS setup.
+class Skia(BaseChar):
+    """Skia - YELLOW sub DPS setup.
 
     Casts Q then E to complete the aspect setup, then leaves the field.
     Self-contained and independent of any specific team composition.

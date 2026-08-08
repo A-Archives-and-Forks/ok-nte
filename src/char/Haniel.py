@@ -9,8 +9,8 @@ from src.combat.planner import (
 SKILL_SHORT_TIMEOUT = 2.0
 
 
-class Hania(BaseChar):
-    """Hania - BLUE support.
+class Haniel(BaseChar):
+    """Haniel - BLUE support.
 
     SUB_DPS, SETUP_ONLY: Q to deploy the enhanced domain, then E to deploy the
     companion, then leave the field. Self-contained and independent of any specific

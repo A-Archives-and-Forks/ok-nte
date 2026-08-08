@@ -11,8 +11,8 @@ from src.combat.planner import (
 SKILL_SHORT_TIMEOUT = 2.0
 
 
-class Daphneel(BaseChar):
-    """Daphneel - PURPLE burst character.
+class Daffodill(BaseChar):
+    """Daffodill - PURPLE burst character.
 
     SUB_DPS, SETUP_ONLY: Q first, then the burst window (E attempted at most once
     during the burst), then leave the field. Self-contained and independent of any
