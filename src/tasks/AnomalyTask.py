@@ -105,10 +105,14 @@ class AnomalyTask(NTEOneTimeTask, BaseCombatTask):
             cls.CONF_ABILITY_ID: 1,
             cls.CONF_ARC_ID: 1,
             cls.CONF_CONSOLE_ID: 1,
-            cls.CONF_CUSTOM_CYCLE: [],
         }
         if daily:
-            config_updates[cls.CONF_CYCLEB_TASK_MODE] = cls.CYCLE_NONE
+            config_updates.update(
+                {
+                    cls.CONF_CYCLEB_TASK_MODE: cls.CYCLE_NONE,
+                    cls.CONF_CUSTOM_CYCLE: [],
+                }
+            )
         instance.default_config.update(config_updates)
 
         instance.config_type.update(
@@ -149,7 +153,9 @@ class AnomalyTask(NTEOneTimeTask, BaseCombatTask):
         if daily:
             description_update[cls.CONF_CYCLEB_TASK_MODE] = "任务完成后自动切换至下一个项目"
         instance.config_description.update(description_update)
-        if not daily:
+        if daily:
+            instance.add_runtime_keys(cls.CONF_CLAIM_REWARD_COUNT)
+        else:
             instance.add_claim_reward_count_config()
 
     def run(self):
@@ -161,9 +167,8 @@ class AnomalyTask(NTEOneTimeTask, BaseCombatTask):
         except Exception as e:
             self.log_error("AnomalyTask Error", e)
 
-    def do_run(self, config=None, stamina_target=None):
-        if config is None:
-            config = self.config
+    def do_run(self, stamina_target=None):
+        config = self.config
         task_type = config.get(self.CONF_TASK_TYPE)
         idx = self.get_sub_idx(config)
 
@@ -376,9 +381,9 @@ class AnomalyTask(NTEOneTimeTask, BaseCombatTask):
         min_id, max_id = task_id_range
         return min_id + (task_id - min_id + 1) % (max_id - min_id + 1)
 
-    def shift_id(self, task: BaseNTETask):
+    def shift_id(self):
         """Advance the daily task according to its configured cycle mode."""
-        config = task.config
+        config = self.config
         if not config:
             return
         shift_handler = {
@@ -386,23 +391,23 @@ class AnomalyTask(NTEOneTimeTask, BaseCombatTask):
             self.CYCLE_CUSTOM: self.shift_custom_cycle,
         }.get(config.get(self.CONF_CYCLEB_TASK_MODE))
         if shift_handler:
-            shift_handler(task)
+            shift_handler()
 
-    def shift_sub_task_id(self, task: BaseNTETask):
+    def shift_sub_task_id(self):
         """Advance to the next ID of the current task type."""
-        task_type = task.config.get(self.CONF_TASK_TYPE)
-        next_task_id = self.get_next_sub_id(task.config)
-        if self.set_task_type_and_id(task.config, task_type, next_task_id):
-            task.sync_config()
+        task_type = self.config.get(self.CONF_TASK_TYPE)
+        next_task_id = self.get_next_sub_id(self.config)
+        if self.set_task_type_and_id(self.config, task_type, next_task_id):
+            self.sync_config()
 
-    def shift_custom_cycle(self, task: BaseNTETask):
+    def shift_custom_cycle(self):
         """Advance to the next user-selected custom-cycle option."""
-        cycle: list = task.config.get(self.CONF_CUSTOM_CYCLE, [])
+        cycle: list = self.config.get(self.CONF_CUSTOM_CYCLE, [])
         if not cycle:
-            task.log_warning("自定义任务循环为空, 不切换任务")
+            self.log_warning("自定义任务循环为空, 不切换任务")
             return
-        task_type = task.config.get(self.CONF_TASK_TYPE)
-        task_id = self.get_sub_idx(task.config) + 1
+        task_type = self.config.get(self.CONF_TASK_TYPE)
+        task_id = self.get_sub_idx(self.config) + 1
         option = self.get_cycle_option(task_type, task_id)
         if option in cycle:
             current_index = cycle.index(option)
@@ -411,13 +416,13 @@ class AnomalyTask(NTEOneTimeTask, BaseCombatTask):
             next_option = cycle[0]
         next_task = self.CYCLE_OPTION_TO_TASK_ID.get(next_option)
         if next_task is None:
-            task.log_warning("无法解析下一个自定义循环任务")
+            self.log_warning("无法解析下一个自定义循环任务")
             return
 
         next_task_type, next_task_id = next_task
-        if self.set_task_type_and_id(task.config, next_task_type, next_task_id):
-            task.sync_config()
-            task.log_info(f"下一个任务设为 {next_task_type} {next_task_id}")
+        if self.set_task_type_and_id(self.config, next_task_type, next_task_id):
+            self.sync_config()
+            self.log_info(f"下一个任务设为 {next_task_type} {next_task_id}")
 
     def get_cycle_option(self, task_type: str, task_id: int):
         """Return the custom-cycle label for a task ID, if it is available."""

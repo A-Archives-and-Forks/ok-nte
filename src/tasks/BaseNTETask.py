@@ -205,7 +205,13 @@ class BaseNTETask(
         target_config = config if config is not None else self.config
         if hasattr(target_config, "save_file"):
             target_config.save_file()
-        self._refresh_config_ui(target_config)
+        self._refresh_config_ui(getattr(target_config, "ui_config", target_config))
+
+    def prepare_for_daily(self, *, config, scene, info):
+        """Attach the runtime state needed when DailyTask owns this task's configuration."""
+        self.config = config
+        self.scene = scene
+        self.info = info
 
     @property
     def thread_pool_executor(self) -> ThreadPoolExecutor | None:

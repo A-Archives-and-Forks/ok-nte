@@ -11,7 +11,10 @@ from src.utils import image_utils as iu
 
 
 class FountainTask(BaseNTETask):
+    NAME = "喷泉签到"
+
     CONF_SIGN_MODE = "签到方式"
+
     SIGN_MODE_SIGN = "签到"
     SIGN_MODE_COIN = "捞币"
     DOMAIN_ENTRY_POS = (0.668, 0.150)
@@ -33,17 +36,20 @@ class FountainTask(BaseNTETask):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._check_confirm_timer = 0
-        self.name = "喷泉签到"
+        self.name = self.NAME
         self.icon = FluentIcon.SYNC
         self.group_name = "日常/周常"
         self.group_icon = FluentIcon.CALENDAR
-        self.visible = False
-        self.default_config.update({self.CONF_SIGN_MODE: self.SIGN_MODE_SIGN})
-        self.config_type.update(
+        self.setup_config(self)
+
+    @classmethod
+    def setup_config(cls, instance: "BaseNTETask", *, daily=False):
+        instance.default_config.update({cls.CONF_SIGN_MODE: cls.SIGN_MODE_SIGN})
+        instance.config_type.update(
             {
-                self.CONF_SIGN_MODE: {
+                cls.CONF_SIGN_MODE: {
                     "type": "drop_down",
-                    "options": [self.SIGN_MODE_SIGN, self.SIGN_MODE_COIN],
+                    "options": [cls.SIGN_MODE_SIGN, cls.SIGN_MODE_COIN],
                 }
             }
         )
@@ -51,14 +57,15 @@ class FountainTask(BaseNTETask):
     def run(self):
         super().run()
         try:
-            self.do_run(self.config.get(self.CONF_SIGN_MODE, self.SIGN_MODE_SIGN))
+            self.do_run()
         except TaskDisabledException:
             raise
         except Exception as e:
             self.log_error("FountainTask Error", e, notify=True)
             raise
 
-    def do_run(self, sign_mode=SIGN_MODE_SIGN):
+    def do_run(self):
+        sign_mode = self.config.get(self.CONF_SIGN_MODE, self.SIGN_MODE_SIGN)
         last_error = None
         for attempt in range(1, self.TASK_RETRY_COUNT + 2):
             self._fountain_task_start = time.time()

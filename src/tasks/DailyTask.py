@@ -1,17 +1,26 @@
 import re
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable, Iterator, List, Optional, Tuple, Type, TypeVar, cast
+from typing import Callable, Generator, List, Optional, Tuple, Type, TypeVar
 
 from ok import CannotFindException, TaskDisabledException, find_color_rectangles
 from qfluentwidgets import FluentIcon
 
 from src import text_white_color
 from src.Labels import Labels
+from src.tasks.AnomalyHunter import AnomalyHunter
 from src.tasks.AnomalyTask import AnomalyTask
 from src.tasks.BaseNTETask import BaseNTETask
 from src.tasks.daily.CinemaDateTask import CinemaDateTask
 from src.tasks.daily.CoffeeTask import CoffeeTask
+from src.tasks.daily.DailyConfig import (
+    DailyConfigSchema,
+    DailyConfigurable,
+    NamespacedConfigView,
+    register_composed_config_i18n,
+)
+from src.tasks.daily.DailyConfigMigrator import DailyConfigMigrator
 from src.tasks.daily.FountainTask import FountainTask
 from src.tasks.daily.FurnitureTask import FurnitureTask
 from src.tasks.daily.GiftTask import GiftTask
@@ -21,25 +30,38 @@ from src.utils import image_utils as iu
 WorkingTaskT = TypeVar("WorkingTaskT", bound=BaseNTETask)
 
 
+@dataclass(frozen=True)
+class DailyChildSpec:
+    """One Daily-owned task and the behavior that differs from the default runner."""
+
+    task_type: Type[BaseNTETask]
+    after_success: Callable[[BaseNTETask], None] | None = None
+
+
 class DailyTask(NTEOneTimeTask, BaseNTETask):
     """日常任务执行器"""
 
     # --- 配置项键名 ---
     CONF_TASK = "副本类型"
     TASK_NONE = "不执行"
-    TASK = [TASK_NONE, AnomalyTask.NAME]
+    # NAME is both the visible task name and the persisted Daily configuration namespace.
+    STAMINA_TASKS = [
+        DailyChildSpec(AnomalyTask, after_success=lambda task: task.shift_id()),
+        DailyChildSpec(AnomalyHunter),
+    ]
+    NORMAL_TASKS = [
+        DailyChildSpec(CinemaDateTask),
+        DailyChildSpec(FountainTask),
+        DailyChildSpec(FurnitureTask),
+        DailyChildSpec(GiftTask),
+    ]
+    DAILY_CHILD_TASKS = [*STAMINA_TASKS, *NORMAL_TASKS]
 
     CONF_CLAIM_MAIL = "领取邮件"
     CONF_COMPLETE_DAILY = "完成每日活跃度"
     CONF_CLAIM_ACTIVITY = "领取活跃度奖励"
     CONF_CLAIM_BP = "领取环期任务奖励"
     CONF_COFFEE_TASK = "一咖舍任务"
-    CONF_CINEMA_DATE = "影院约会"
-    CONF_FOUNTAIN_SIGN = "喷泉签到"
-    CONF_FURNITURE = "异象家具"
-    CONF_GIFT = "羁遇赠礼"
-
-    CINEMA_DATE_TARGET = "约会目标"
     DAILY_STAMINA_TARGET = "目标消耗体力"
 
     # --- 一咖舍任务选项 ---
@@ -54,19 +76,16 @@ class DailyTask(NTEOneTimeTask, BaseNTETask):
         self.group_icon = FluentIcon.CALENDAR
         self.support_schedule_task = True
         self.task_status = {"success": [], "failed": [], "skipped": [], "pending": []}
-        self.working_task: Optional[BaseNTETask] = None
+        self.working_task: Optional["BaseNTETask"] = None
+        self._daily_config_schemas: dict[str, DailyConfigSchema] = {}
 
-        AnomalyTask.setup_config(self, daily=True)
+        stamina_tasks_name = [self.TASK_NONE, *(spec.task_type.NAME for spec in self.STAMINA_TASKS)]
+
         self.default_config.update(
             {
-                self.CONF_TASK: self.TASK[1],
+                self.CONF_TASK: stamina_tasks_name[1],
                 self.DAILY_STAMINA_TARGET: 180,
                 self.CONF_COFFEE_TASK: self.TASK_NONE,
-                self.CONF_CINEMA_DATE: False,
-                self.CINEMA_DATE_TARGET: "",
-                self.CONF_FOUNTAIN_SIGN: self.TASK_NONE,
-                self.CONF_FURNITURE: False,
-                self.CONF_GIFT: False,
             }
         )
         self.config_description.update(
@@ -82,39 +101,54 @@ class DailyTask(NTEOneTimeTask, BaseNTETask):
             {
                 self.CONF_TASK: {
                     "type": "drop_down",
-                    "options": self.TASK,
-                    "sub_configs": {
-                        self.TASK[1]: [
-                            AnomalyTask.CONF_TASK_TYPE,
-                            AnomalyTask.CONF_CYCLEB_TASK_MODE,
-                            self.DAILY_STAMINA_TARGET,
-                        ],
-                    },
+                    "options": stamina_tasks_name,
+                    "sub_configs": {},
                 },
                 self.CONF_COFFEE_TASK: {
                     "type": "drop_down",
                     "options": coffee_options,
                 },
-                self.CONF_CINEMA_DATE: {
-                    "sub_configs": {
-                        True: [
-                            self.CINEMA_DATE_TARGET,
-                        ]
-                    },
-                },
-                self.CONF_FOUNTAIN_SIGN: {
-                    "type": "drop_down",
-                    "options": [
-                        self.TASK_NONE,
-                        FountainTask.SIGN_MODE_SIGN,
-                        FountainTask.SIGN_MODE_COIN,
-                    ],
-                },
             }
         )
+        self._build_tasks_config()
 
         self.current_task_key = None
         self.add_exit_after_config()
+
+    def _build_tasks_config(self):
+        schemas = []
+        names = set()
+        for spec in self.DAILY_CHILD_TASKS:
+            task: Type[DailyConfigurable] = spec.task_type
+            if task.NAME in names:
+                raise ValueError(f"Daily child task name must be unique: {task.NAME}")
+            names.add(task.NAME)
+            schema = DailyConfigSchema(task.NAME)
+            task.setup_config(schema, daily=True)
+            self._daily_config_schemas[task.NAME] = schema
+            schemas.append(schema)
+
+        register_composed_config_i18n(schemas)
+        top_level_configs = {schema.task_name: schema.install(self) for schema in schemas}
+        stamina_sub_configs = self.config_type[self.CONF_TASK]["sub_configs"]
+        for spec in self.STAMINA_TASKS:
+            task = spec.task_type
+            stamina_sub_configs[task.NAME] = [
+                *top_level_configs[task.NAME],
+                self.DAILY_STAMINA_TARGET,
+            ]
+
+        for spec in self.NORMAL_TASKS:
+            task = spec.task_type
+            self.default_config[task.NAME] = False
+            if top_level_configs[task.NAME]:
+                self.config_type[task.NAME] = {
+                    "sub_configs": {True: top_level_configs[task.NAME]},
+                }
+
+    def load_config(self):
+        DailyConfigMigrator(self).migrate()
+        super().load_config()
 
     def run(self):
         super().run()
@@ -157,27 +191,15 @@ class DailyTask(NTEOneTimeTask, BaseNTETask):
                 self._task_enabled(self.CONF_CLAIM_BP, True),
                 self.claim_battle_pass_rewards,
             ),
-            (
-                self.CONF_CINEMA_DATE,
-                self._task_enabled(self.CONF_CINEMA_DATE, False),
-                self.run_cinema_task,
-            ),
-            (
-                self.CONF_FOUNTAIN_SIGN,
-                self._task_enabled(self.CONF_FOUNTAIN_SIGN, self.TASK_NONE, self.TASK_NONE),
-                self.run_fountain_sign_task,
-            ),
-            (
-                self.CONF_FURNITURE,
-                self._task_enabled(self.CONF_FURNITURE, False),
-                self.run_furniture_task,
-            ),
-            (
-                self.CONF_GIFT,
-                self._task_enabled(self.CONF_GIFT, False),
-                self.run_gift_task,
-            ),
         ]
+        tasks.extend(
+            (
+                spec.task_type.NAME,
+                self._task_enabled(spec.task_type.NAME, False),
+                lambda spec=spec: self.run_daily_child(spec),
+            )
+            for spec in self.NORMAL_TASKS
+        )
 
         self._reset_task_status(tasks)
 
@@ -300,10 +322,11 @@ class DailyTask(NTEOneTimeTask, BaseNTETask):
         mode = self.config.get(self.CONF_COFFEE_TASK)
         match mode:
             case self.COFFEE_MODE_AUTO:
-                with self.set_working_task(CoffeeTask) as task:
-                    task.do_run()
+                with self.set_registered_working_task(CoffeeTask) as task:
+                    return task.do_run()
             case self.COFFEE_MODE_CLAIM_AND_RESTOCK:
-                self.claim_coffee()
+                return self.claim_coffee()
+        return True
 
     def complete_daily_activities(self):
         """执行操作完成每日活跃度"""
@@ -323,28 +346,54 @@ class DailyTask(NTEOneTimeTask, BaseNTETask):
             return True
         self.info_set("must use stamina", must_use)
 
-        ret = False
         task_name = self.config.get(self.CONF_TASK)
-        if task_name == AnomalyTask.NAME:
-            with self.set_working_task(AnomalyTask) as task:
-                if ret := task.do_run(self.config, stamina_target=must_use):
-                    task.shift_id(self)
-
-        return ret
+        spec = next((spec for spec in self.STAMINA_TASKS if spec.task_type.NAME == task_name), None)
+        if spec is None:
+            return False
+        with self.set_working_task(spec.task_type) as task:
+            result = task.do_run(stamina_target=must_use)
+            if result and spec.after_success:
+                spec.after_success(task)
+            return result
 
     @contextmanager
-    def set_working_task(self, cls: Type[WorkingTaskT]) -> Iterator[WorkingTaskT]:
+    def set_working_task(self, cls: Type[WorkingTaskT]) -> Generator[WorkingTaskT, None, None]:
+        schema = self._daily_config_schemas[cls.NAME]
+        working_task = cls(executor=self.executor, app=self._app)
+        config = NamespacedConfigView(
+            self.config,
+            schema.task_name,
+            schema.config_keys,
+            schema.runtime_keys,
+        )
+        working_task.prepare_for_daily(config=config, scene=self.scene, info=self.info)
+        with self._activate_working_task(working_task):
+            yield working_task
+
+    @contextmanager
+    def set_registered_working_task(
+        self, cls: Type[WorkingTaskT]
+    ) -> Generator[WorkingTaskT, None, None]:
+        working_task = self.get_task_by_class(cls)
+        if working_task is None:
+            raise RuntimeError(f"Registered daily task is unavailable: {cls.__name__}")
+        with self._activate_working_task(working_task):
+            yield working_task
+
+    @contextmanager
+    def _activate_working_task(
+        self, working_task: WorkingTaskT
+    ) -> Generator[WorkingTaskT, None, None]:
         old_working_task = self.working_task
         old_sleep_check_interval = self.sleep_check_interval
-        working_task = cast(WorkingTaskT, self.get_task_by_class(cls))
         old_task_info = working_task.info
         self.working_task = working_task
-        self.working_task.info = self.info
+        working_task.info = self.info
         self.sleep_check_interval = working_task.sleep_check_interval
         try:
             yield working_task
         finally:
-            self.working_task.info = old_task_info
+            working_task.info = old_task_info
             self.working_task = old_working_task
             self.sleep_check_interval = old_sleep_check_interval
 
@@ -512,20 +561,6 @@ class DailyTask(NTEOneTimeTask, BaseNTETask):
         self.operate_click(0.600, 0.656)  # 确认
         return True
 
-    def run_fountain_sign_task(self):
-        sign_mode = self.config.get(self.CONF_FOUNTAIN_SIGN)
-        with self.set_working_task(FountainTask) as task:
-            return task.do_run(sign_mode)
-
-    def run_gift_task(self):
-        with self.set_working_task(GiftTask) as task:
-            summary = task.run_gifts()
-        return len(summary["failed"]) == 0
-
-    def run_furniture_task(self):
-        with self.set_working_task(FurnitureTask) as task:
+    def run_daily_child(self, spec: DailyChildSpec):
+        with self.set_working_task(spec.task_type) as task:
             return task.do_run()
-
-    def run_cinema_task(self):
-        with self.set_working_task(CinemaDateTask) as task:
-            return task.do_run(self.config.get(self.CINEMA_DATE_TARGET, ""))

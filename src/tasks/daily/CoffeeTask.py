@@ -14,6 +14,7 @@ class CoffeeTask(NTEOneTimeTask, BaseNTETask):
     """
 
     DEFAULT_MOVE = True
+    NAME = "一咖舍自动化"
 
     CONF_COLLECT_INCOME = "领取收益"
     CONF_RESTOCK_GOODS = "补货货物"
@@ -27,7 +28,7 @@ class CoffeeTask(NTEOneTimeTask, BaseNTETask):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.name = "一咖舍自动化"
+        self.name = self.NAME
         self.description = "领取一咖舍收益, 可选自动补货, 购买货物或优化商品"
         self.icon = FluentIcon.SHOPPING_CART
         self.group_name = "日常/周常"
@@ -35,45 +36,49 @@ class CoffeeTask(NTEOneTimeTask, BaseNTETask):
         # 一咖舍页面的所有 OCR 判定 (商品名、价格表、营收弹窗、补货时长选项等)
         # 仅在简体中文 UI 下匹配, 因此只对 zh_CN 暴露此任务.
         self.supported_languages = ["zh_CN"]
-        self.default_config.update(
-            {
-                self.CONF_COLLECT_INCOME: True,
-                self.CONF_RESTOCK_GOODS: True,
-                self.CONF_BUY_GOODS: True,
-                self.CONF_OPTIMIZE_PRODUCTS: False,
-                self.CONF_RESTOCK_DURATION: self.AUTO,
-                self.CONF_PRODUCT_SLOTS: self.AUTO,
-                self.CONF_PRICE_TABLE: self.AUTO,
-            }
-        )
-        self.config_description.update(
-            {
-                self.CONF_COLLECT_INCOME: "领取一咖舍累计收益",
-                self.CONF_RESTOCK_GOODS: "在原料库存界面进行补货",
-                self.CONF_BUY_GOODS: "补货时允许购买货物并送货上门",
-                self.CONF_OPTIMIZE_PRODUCTS: "根据价格和趋势尝试优化一咖舍商品",
-                self.CONF_RESTOCK_DURATION: "补货时长(auto 表示 24 小时优先, 失败时回退到更短时长)",
-                self.CONF_PRODUCT_SLOTS: "商品位数量(auto 由当前已解锁数量决定)",
-                self.CONF_PRICE_TABLE: "价格表识别(disabled 跳过商品优化以避免未识别价格的替换)",
-            }
-        )
-        self.config_type.update(
-            {
-                self.CONF_RESTOCK_DURATION: {
-                    "type": "drop_down",
-                    "options": [self.AUTO, *ALLOWED_DURATIONS],
-                },
-                self.CONF_PRODUCT_SLOTS: {
-                    "type": "drop_down",
-                    "options": [self.AUTO, "1", "2", "3", "4", "5"],
-                },
-                self.CONF_PRICE_TABLE: {
-                    "type": "drop_down",
-                    "options": [self.AUTO, "disabled"],
-                },
-            }
-        )
+        self.setup_config(self)
         self.add_exit_after_config()
+
+    @classmethod
+    def setup_config(cls, instance: "BaseNTETask", *, daily=False):
+        instance.default_config.update(
+            {
+                cls.CONF_COLLECT_INCOME: True,
+                cls.CONF_RESTOCK_GOODS: True,
+                cls.CONF_BUY_GOODS: True,
+                cls.CONF_OPTIMIZE_PRODUCTS: False,
+                cls.CONF_RESTOCK_DURATION: cls.AUTO,
+                cls.CONF_PRODUCT_SLOTS: cls.AUTO,
+                cls.CONF_PRICE_TABLE: cls.AUTO,
+            }
+        )
+        instance.config_description.update(
+            {
+                cls.CONF_COLLECT_INCOME: "领取一咖舍累计收益",
+                cls.CONF_RESTOCK_GOODS: "在原料库存界面进行补货",
+                cls.CONF_BUY_GOODS: "补货时允许购买货物并送货上门",
+                cls.CONF_OPTIMIZE_PRODUCTS: "根据价格和趋势尝试优化一咖舍商品",
+                cls.CONF_RESTOCK_DURATION: "补货时长(auto 表示 24 小时优先, 失败时回退到更短时长)",
+                cls.CONF_PRODUCT_SLOTS: "商品位数量(auto 由当前已解锁数量决定)",
+                cls.CONF_PRICE_TABLE: "价格表识别(disabled 跳过商品优化以避免未识别价格的替换)",
+            }
+        )
+        instance.config_type.update(
+            {
+                cls.CONF_RESTOCK_DURATION: {
+                    "type": "drop_down",
+                    "options": [cls.AUTO, *ALLOWED_DURATIONS],
+                },
+                cls.CONF_PRODUCT_SLOTS: {
+                    "type": "drop_down",
+                    "options": [cls.AUTO, "1", "2", "3", "4", "5"],
+                },
+                cls.CONF_PRICE_TABLE: {
+                    "type": "drop_down",
+                    "options": [cls.AUTO, "disabled"],
+                },
+            }
+        )
 
     def run(self):
         super().run()

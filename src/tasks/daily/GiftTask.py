@@ -14,6 +14,12 @@ from src.tasks.NTEOneTimeTask import NTEOneTimeTask
 class GiftTask(NTEOneTimeTask, BaseNTETask):
     """Give only the explicitly captured, first-page gifts to configured characters."""
 
+    NAME = "羁遇赠礼"
+
+    @classmethod
+    def setup_config(cls, instance: "BaseNTETask", *, daily=False):
+        """Gift selection is managed by GiftManager rather than task configuration."""
+
     MAX_TOTAL_GIFTS = 10
     MAX_GIFTS_PER_CHARACTER = 3
     NAME_MATCH_THRESHOLD = 0.82
@@ -44,7 +50,7 @@ class GiftTask(NTEOneTimeTask, BaseNTETask):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.name = "Gift Manager"
+        self.name = self.NAME
         self.icon = FluentIcon.HEART
         self.visible = False
         self.manager = GiftManager()
@@ -55,13 +61,17 @@ class GiftTask(NTEOneTimeTask, BaseNTETask):
     def run(self):
         super().run()
         try:
-            self.run_gifts()
+            self.do_run()
         except TaskDisabledException:
             raise
         except Exception as e:
             self.screenshot("gift_task_failure")
             self.log_error("GiftTask error", e)
             raise
+
+    def do_run(self) -> bool:
+        summary = self.run_gifts()
+        return len(summary["failed"]) == 0
 
     def run_gifts(self) -> dict:
         profiles = self.manager.get_enabled_profiles()

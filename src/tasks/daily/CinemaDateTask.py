@@ -11,34 +11,36 @@ from src.utils import image_utils as iu
 
 
 class CinemaDateTask(NTEOneTimeTask, BaseNTETask):
-    CINEMA_DATE_TARGET = "约会目标"
+    NAME = "影院约会"
+    CONF_DATE_TARGET = "约会目标"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.name = "影院约会"
+        self.name = self.NAME
         self.icon = FluentIcon.SHOPPING_CART
         self.group_name = "日常/周常"
-        self.visible = False
+        self.setup_config(self)
 
-        self.default_config.update(
+    @classmethod
+    def setup_config(cls, instance: "BaseNTETask", *, daily=False):
+        instance.default_config.update(
             {
-                self.CINEMA_DATE_TARGET: "",
+                cls.CONF_DATE_TARGET: "",
             }
         )
 
     def run(self):
         super().run()
         try:
-            target = self.config.get(self.CINEMA_DATE_TARGET, "")
-            self.do_run(target)
+            self.do_run()
         except TaskDisabledException:
             raise
         except Exception as e:
             self.log_error("CinemaDateTask error", e)
             raise
 
-    def do_run(self, target=""):
-        return self.run_cinema_date(target)
+    def do_run(self):
+        return self.run_cinema_date(self.config.get(self.CONF_DATE_TARGET, ""))
 
     def run_cinema_date(self, target=""):
         self.ensure_main(esc=True, time_out=60)

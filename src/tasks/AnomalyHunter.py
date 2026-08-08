@@ -12,6 +12,7 @@ from src.tasks.NTEOneTimeTask import NTEOneTimeTask
 
 
 class AnomalyHunter(NTEOneTimeTask, BaseCombatTask):
+    NAME = "异象追猎"
     # --- 配置项键名 ---
     CONF_HUNTER_TARGET = "追猎目标"
 
@@ -58,7 +59,7 @@ class AnomalyHunter(NTEOneTimeTask, BaseCombatTask):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.name = "异象追猎"
+        self.name = self.NAME
         self.description = "自动进行异象追猎任务"
         self.icon = FluentIcon.FLAG
         self._outer_config = None
@@ -81,7 +82,9 @@ class AnomalyHunter(NTEOneTimeTask, BaseCombatTask):
                 }
             }
         )
-        if not daily:
+        if daily:
+            instance.add_runtime_keys(cls.CONF_CLAIM_REWARD_COUNT)
+        else:
             instance.add_claim_reward_count_config()
 
     def run(self):
@@ -93,9 +96,8 @@ class AnomalyHunter(NTEOneTimeTask, BaseCombatTask):
         except Exception as e:
             self.log_error("AnomalyHunter Error", e)
 
-    def do_run(self, config=None, stamina_target=None):
-        if config is None:
-            config = self.config
+    def do_run(self, stamina_target=None):
+        config = self.config
 
         target = self.normalize_target(config.get(self.CONF_HUNTER_TARGET, self.TARGET_SOUND_KING))
         target_idx = self.get_target_idx(target)

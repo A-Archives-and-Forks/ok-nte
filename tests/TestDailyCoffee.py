@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
+from src.tasks.daily.CoffeeTask import CoffeeTask
 from src.tasks.DailyTask import DailyTask
 
 
@@ -100,6 +101,9 @@ class TestDailyCoffeeLocaleGate(unittest.TestCase):
             self.assertNotIn(
                 DailyTask.COFFEE_MODE_AUTO,
                 task.config_type[DailyTask.CONF_COFFEE_TASK]["options"],
+            )
+            self.assertFalse(
+                any(key.startswith(f"{CoffeeTask.NAME} ·") for key in task.default_config)
             )
         finally:
             self._restore_app(original)

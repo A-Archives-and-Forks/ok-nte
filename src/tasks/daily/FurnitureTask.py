@@ -7,12 +7,17 @@ from src.tasks.NTEOneTimeTask import NTEOneTimeTask
 
 
 class FurnitureTask(NTEOneTimeTask, BaseCombatTask):
+    NAME = "异象家具"
+
+    @classmethod
+    def setup_config(cls, instance: "BaseCombatTask", *, daily=False):
+        """Furniture has no task-specific options, but participates in the Daily schema."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.name = "异象家具"
+        self.name = self.NAME
         self.icon = FluentIcon.SHOPPING_CART
         self.group_name = "日常/周常"
-        self.visible = False
 
     def run(self):
         super().run()
