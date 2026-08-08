@@ -1,7 +1,5 @@
 from src.char.BaseChar import BaseChar
 from src.combat.planner import (
-    ActionSlot,
-    ActionTag,
     CombatContext,
     FieldPreference,
     Role,
@@ -20,27 +18,21 @@ class Yi(BaseChar):
 
     cn_name = "翳"
     element = BaseChar.Element.YELLOW
-    SKILL_SETTLE_DURATION = 0.4
 
     def describe_role(self):
         return RoleProfile(
             role=Role.SUB_DPS,
             field_preference=FieldPreference.SETUP_ONLY,
-            max_field_time=0,
         )
 
     def combat_plan(self, context: CombatContext):
-        skill = self.planner_action(
-            tags={ActionTag.SKILL_ACTION},
-            slot=ActionSlot.SKILL,
-            execute=lambda ctx: self._cast_skill_with_settle(),
-            priority_ready=lambda _: self.skill_available(),
-        )
+        skill = self.click_skill_action()
         ultimate = self.click_ultimate_action()
-        return self.plan(skill, ultimate)
 
-    def _cast_skill_with_settle(self):
-        result = self.click_skill(time_out=SKILL_SHORT_TIMEOUT)
-        if result:
-            self.sleep(self.SKILL_SETTLE_DURATION)
-        return result
+        def entry():
+            skill_result = yield skill
+            if skill_result:
+                self.sleep(0.4)
+            yield ultimate
+
+        return self.plan(skill, ultimate, entry=entry)

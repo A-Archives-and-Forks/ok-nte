@@ -1036,3 +1036,7 @@ class BaseChar:
     def consume_first_engage(self):
         """消费本场首次登场标记, 同一场战斗仅会成功一次。"""
         return self.task.consume_first_engage(self)
+
+    def now(self):
+        """Gets the current system monotonic time."""
+        return time.monotonic()
