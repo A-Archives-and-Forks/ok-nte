@@ -18,7 +18,7 @@
 
 ## 从源码运行
 
-源码运行适合二次开发和调试。完整的本地开发流程见[从源码运行](../development/running-from-source.md)。
+源码运行适合二次开发和调试。完整的本地开发流程见[从源码运行](../../development/running-from-source.md)。
 
 ```bash
 git clone https://github.com/BnanZ0/ok-nte.git
