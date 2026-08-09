@@ -1,0 +1,60 @@
+site_name: ok-nte 文档
+site_description: 异环自动化工具的使用与开发文档
+repo_name: BnanZ0/ok-nte
+repo_url: https://github.com/BnanZ0/ok-nte
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.sections
+    - search.suggest
+    - search.highlight
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: 切换到深色模式
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: 切换到浅色模式
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - 首页: index.md
+  - 开始使用:
+      - 安装: getting-started/installation.md
+      - 使用前配置: getting-started/configuration.md
+  - 功能:
+      - 功能概览: features/overview.md
+      - 快速上手: guides/quick-start.md
+      - 常见问题与反馈: guides/troubleshooting.md
+  - 开发:
+      - 从源码运行: development/running-from-source.md
+      - Flow 作者指南: development/flow.md
+      - Combat Planner 开发指南: development/combat-planner.md
+      - 贡献与验证: development/contributing.md
