@@ -24,7 +24,7 @@ class FurnitureTask(NTEOneTimeTask, BaseCombatTask):
             self.log_error("FurnitureTask error", e)
             raise
 
-    def do_run(self):
+    def do_run(self) -> bool:
         return self.claim_anomaly_furniture()
 
     def claim_anomaly_furniture(self):
