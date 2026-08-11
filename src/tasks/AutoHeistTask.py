@@ -794,7 +794,13 @@ class AutoHeistTask(NTEOneTimeTask, BaseCombatTask):
         self.switch_to_runner(check_switched=True)
 
     def wait_and_interact(
-        self, direction=None, interact=True, key_up_sleep=0.7, is_lock=False, time_out=10
+        self,
+        direction=None,
+        interact=True,
+        key_up_sleep=0.7,
+        is_lock=False,
+        time_out=10,
+        raise_timeout=False,
     ):
         """等待交互点并可选择按 `f` 交互。
 
@@ -807,7 +813,10 @@ class AutoHeistTask(NTEOneTimeTask, BaseCombatTask):
             self.send_key_up(direction)
             self.sleep(key_up_sleep)
         if not ret:
-            raise AbortException("timeout for wait_and_interact")
+            if raise_timeout:
+                raise AbortException("timeout for wait_and_interact")
+            else:
+                return False
         elif not interact:
             return True
         self.wait_until(
