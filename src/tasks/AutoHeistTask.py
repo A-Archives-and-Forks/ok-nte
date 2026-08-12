@@ -447,10 +447,10 @@ class AutoHeistTask(NTEOneTimeTask, BaseCombatTask):
 
     def get_heist_rewards(self):
         cash = self.ocr(
-            0.359, 0.595, 0.500, 0.642, frame_processor=gf.isolate_text_to_black, name="cash"
+            0.359, 0.595, 0.500, 0.642, frame_processor=gf.isolate_black_text, name="cash"
         )
         coin = self.ocr(
-            0.654, 0.595, 0.789, 0.641, frame_processor=gf.isolate_text_to_black, name="coin"
+            0.654, 0.595, 0.789, 0.641, frame_processor=gf.isolate_black_text, name="coin"
         )
         return self._parse_reward_number(cash, "earnfcash"), self._parse_reward_number(
             coin, "earnpcoin"
