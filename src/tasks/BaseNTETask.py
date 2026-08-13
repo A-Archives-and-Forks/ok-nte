@@ -1107,14 +1107,25 @@ class BaseNTETask(
             return False
         return True
 
-    def scroll_and_is_end(self, x, y, count, box: Box, after_sleep=0.25, threshold=0.85):
-        snapshot = box.crop_frame(self.frame)
+    def scroll_and_is_end(
+        self,
+        x,
+        y,
+        count,
+        snap_box: Box,
+        check_box: Box | None = None,
+        after_sleep=0.25,
+        threshold=0.85,
+    ):
+        if check_box is None:
+            check_box = snap_box.scale(1.2)
+        snapshot = snap_box.crop_frame(self.frame)
         self.operate(
             lambda: self.scroll(x, y, count=count),
             block=True,
         )
         self.sleep(after_sleep)
-        if self.find_one(template=snapshot, box=box.scale(1.1), threshold=threshold):
+        if self.find_one("snapshot", template=snapshot, box=check_box, threshold=threshold):
             return True
 
 
