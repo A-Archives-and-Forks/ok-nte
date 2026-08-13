@@ -9,9 +9,9 @@ from src.utils import image_utils as iu
 
 
 class DailyClaimTask(NTEOneTimeTask, BaseNTETask):
-    CONF_CLAIM_MAIL = "领取邮件"
-    CONF_CLAIM_ACTIVITY = "领取活跃度奖励"
-    CONF_CLAIM_BATTLE_PASS = "领取环期任务奖励"
+    CONF_CLAIM_MAIL = "邮件"
+    CONF_CLAIM_ACTIVITY = "活跃度奖励"
+    CONF_CLAIM_BATTLE_PASS = "环期任务奖励"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

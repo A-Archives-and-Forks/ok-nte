@@ -17,7 +17,7 @@ class FountainTask(NTEOneTimeTask, BaseNTETask):
     SIGN_MODE_COIN = "捞币"
     DOMAIN_ENTRY_POS = (0.668, 0.150)
     DOMAIN_CONFIRM_POS = (0.917, 0.335)
-    PHONE_BOOTH_BOX = (0.300, 0.420, 0.375, 0.545)
+    PHONE_BOOTH_BOX = (0.300, 0.420, 0.400, 0.545)
     BOOKSHOP_LOGO_BOX = (0.092, 0.170, 0.113, 0.206)
     BOOKSHOP_LOGO_SECOND_BOX = (0.080, 0.180, 0.096, 0.210)
     ICECAR_LIGHT_BOX = (0.650, 0.350, 0.885, 0.600)
@@ -52,14 +52,15 @@ class FountainTask(NTEOneTimeTask, BaseNTETask):
     def run(self):
         super().run()
         try:
-            self.do_run(self.config.get(self.CONF_SIGN_MODE, self.SIGN_MODE_SIGN))
+            self.do_run()
         except TaskDisabledException:
             raise
         except Exception as e:
             self.log_error("FountainTask Error", e, notify=True)
             raise
 
-    def do_run(self, sign_mode=SIGN_MODE_SIGN) -> bool:
+    def do_run(self) -> bool:
+        sign_mode = self.config.get(self.CONF_SIGN_MODE, self.SIGN_MODE_SIGN)
         last_error = None
         for attempt in range(1, self.TASK_RETRY_COUNT + 2):
             self._fountain_task_start = time.time()
@@ -113,7 +114,7 @@ class FountainTask(NTEOneTimeTask, BaseNTETask):
         box = self.box_of_screen(*self.PHONE_BOOTH_BOX, name="fountain_phone_booth")
         self.click_map_teleport(box)
         self.wait_in_team(time_out=30, settle_time=0.25)
-        self.sleep(0.5)
+        self.sleep(1)
 
     def run_to_fountain(self):
         self.middle_click(after_sleep=1)
@@ -143,7 +144,7 @@ class FountainTask(NTEOneTimeTask, BaseNTETask):
         try:
             self.send_key_down("w", after_sleep=0.4)
             self.send_key("lshift", after_sleep=0.4)
-            self.sleep(20)
+            self.sleep(17)
             self.wait_until(
                 self.find_icecar_light,
                 time_out=self.ICECAR_LIGHT_TIMEOUT,
@@ -163,12 +164,10 @@ class FountainTask(NTEOneTimeTask, BaseNTETask):
 
         try:
             self.send_key_down("w", after_sleep=0.4)
-            self.send_key("lshift", after_sleep=2)
-            self.send_key("a", down_time=0.7, after_sleep=0.4)
+            self.sleep(4)
+            self.send_key("d", down_time=0.5)
             self.sleep(5)
-            self.send_key("d", down_time=1, after_sleep=0.4)
-            self.send_key("space", after_sleep=0.4)
-            self.sleep(5)
+            self.send_key("lshift", after_sleep=1)
             self.wait_until(
                 find_sign,
                 time_out=self.INTERAC_TIMEOUT,

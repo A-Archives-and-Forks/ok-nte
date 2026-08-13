@@ -345,7 +345,7 @@ class DailyPlanTask(NTEOneTimeTask, BaseNTETask):
             self._execute_plan_item(item)
         self.ensure_main()
         self._print_result()
-        self.log_info("结束执行日常任务", notify=True)
+        self.log_info("结束执行日常任务")
         return not self.task_status["failed"]
 
     def _execute_plan_item(self, item):
@@ -395,9 +395,28 @@ class DailyPlanTask(NTEOneTimeTask, BaseNTETask):
         }
 
     def _print_result(self):
-        self.info_set("success", f"{self.task_status['success']}")
-        self.info_set("failed", f"{self.task_status['failed']}")
-        self.info_set("skipped", f"{self.task_status['skipped']}")
+        results = {
+            status: [self._task_display_name(task_id) for task_id in task_ids]
+            for status, task_ids in self.task_status.items()
+            if status in ("success", "failed", "skipped")
+        }
+        self.info_set("success", f"{results['success']}")
+        self.info_set("failed", f"{results['failed']}")
+        self.info_set("skipped", f"{results['skipped']}")
+        result = "\n".join(
+            (
+                f"success: {results['success']}",
+                f"failed: {results['failed']}",
+                f"skipped: {results['skipped']}",
+            )
+        )
+        self.log_info(result, notify=True)
+
+    def _task_display_name(self, task_id):
+        task = self.task_for_id(task_id)
+        if task is None:
+            return task_id
+        return self.tr(task.name) if getattr(self, "_app", None) is not None else task.name
 
     @contextmanager
     def _active_task_context(self, task_id, task):
