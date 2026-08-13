@@ -313,7 +313,7 @@ class BaseNTETask(
         self.sleep(after_sleep)
         return result
 
-    def send_key(self, key, down_time=0.02, interval=-1, after_sleep=0, action_name=None) -> Any:
+    def send_key(self, key, down_time=0.02, interval=-1, after_sleep=0, action_name=None) -> bool:
         if action_name is not None:
             if not self._check_action_interval(action_name, interval):
                 return False
