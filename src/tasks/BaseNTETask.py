@@ -1,4 +1,4 @@
-import inspect
+﻿import inspect
 import re
 import threading
 import time
@@ -619,7 +619,13 @@ class BaseNTETask(
 
         # 3. 点击传送点并执行传送(Travel)
         self.operate_click(teleport)
-        self.sleep(0.5)
+        if not self.wait_feature(Labels.close_button, threshold=0.8, time_out=1):
+            if box := self.find_best_match_in_box(
+                self.box_of_screen(0.578, 0.426, 0.607, 0.580),
+                [Labels.map_big_teleport, Labels.map_small_teleport],
+                threshold=0.7
+            ):
+                self.operate_click(box, after_sleep=1)
         self.click_traval_button()
 
         return teleport
