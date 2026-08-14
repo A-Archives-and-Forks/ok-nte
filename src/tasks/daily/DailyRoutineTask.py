@@ -133,8 +133,8 @@ class _DailyTaskConfig(dict):
 
 
 class DailyRoutineTask(NTEOneTimeTask, BaseNTETask):
-    CONF_ITEMS = "计划任务"
-    CONF_TASK_CONFIGS = "任务设置"
+    CONF_ITEMS = "Routine Items"
+    CONF_TASK_CONFIGS = "Routine Task Configs"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -150,6 +150,7 @@ class DailyRoutineTask(NTEOneTimeTask, BaseNTETask):
         self.config_description[self.CONF_ITEMS] = "日常任务中的任务顺序和启用状态"
         self.config_type[self.CONF_ITEMS] = {"hidden": True}
         self.config_type[self.CONF_TASK_CONFIGS] = {"hidden": True}
+        self.add_exit_after_config()
 
     @staticmethod
     def default_items():

@@ -17,6 +17,7 @@ from qfluentwidgets import (
     CheckBox,
     ExpandLayout,
     FluentIcon,
+    HorizontalSeparator,
     PushButton,
     ScrollArea,
     isDarkTheme,
@@ -205,6 +206,7 @@ class DailyRoutineTab(CustomTab):
         self.tr_name = og.app.tr("日常任务")
         self._rendered = False
         self._cards = {}
+        self._routine_settings_card = None
         self._task_control_card = None
         self._order_changed = False
         self._drag_proxy = None
@@ -213,6 +215,12 @@ class DailyRoutineTab(CustomTab):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.vBoxLayout.setContentsMargins(0, 0, 0, 0)
         self.vBoxLayout.setSpacing(0)
+
+        self.routine_settings_view = QWidget(self.view)
+        self.routine_settings_view.setObjectName("view")
+        self.routine_settings_layout = ExpandLayout(self.routine_settings_view)
+        configure_page_layout(self.routine_settings_layout)
+        self.vBoxLayout.addWidget(self.routine_settings_view)
 
         self.routine_scroll_area = ScrollArea(self.view)
         self.routine_scroll_area.setObjectName("view")
@@ -238,17 +246,14 @@ class DailyRoutineTab(CustomTab):
         self.collapse_button = PushButton(
             FluentSystemIcon.CHEVRON_UP_DOWN, self.tr("全部展开"), self.action_bar
         )
-        self.reset_button = PushButton(FluentIcon.CANCEL, self.tr("重置配置"), self.action_bar)
         action_layout.addWidget(self.select_all_check)
         action_layout.addWidget(self.collapse_button)
-        action_layout.addWidget(self.reset_button)
         action_layout.addStretch(1)
         self.action_layout = action_layout
         self.vBoxLayout.addWidget(self.action_bar)
 
         self.select_all_check.toggled.connect(self._set_all_selected)
         self.collapse_button.clicked.connect(self._toggle_all_expansion)
-        self.reset_button.clicked.connect(self._reset_routine)
 
     @property
     def executor(self):
@@ -269,10 +274,24 @@ class DailyRoutineTab(CustomTab):
             return None
         return self.get_task(DailyRoutineTask)
 
+    def _install_routine_settings(self, routine_task):
+        if self._routine_settings_card is None:
+            self._routine_settings_card = TaskCard(routine_task, True)
+            self._routine_settings_card.button_container.hide()
+            if self._routine_settings_card.reset_config is not None:
+                self._routine_settings_card.reset_config.clicked.connect(self._render_routine)
+            self._routine_settings_card.setParent(self.routine_settings_view)
+            self.routine_settings_layout.addWidget(self._routine_settings_card)
+            self._routine_settings_card.show()
+
+            self.routine_separator = HorizontalSeparator(self.view)
+            self.routine_settings_layout.addWidget(self.routine_separator)
+
     def _render_routine(self):
         routine_task = self._routine_task()
         if routine_task is None:
             return
+        self._install_routine_settings(routine_task)
         while self.routine_layout.count():
             layout_item = self.routine_layout.takeAt(0)
             if widget := layout_item.widget():
@@ -435,13 +454,6 @@ class DailyRoutineTab(CustomTab):
         self.collapse_button.setText(
             self.tr("全部折叠") if should_collapse else self.tr("全部展开")
         )
-
-    def _reset_routine(self):
-        routine_task = self._routine_task()
-        if routine_task is None:
-            return
-        routine_task.reset_items()
-        self._render_routine()
 
     def _install_task_controls(self, routine_task):
         if self._task_control_card is not None:
