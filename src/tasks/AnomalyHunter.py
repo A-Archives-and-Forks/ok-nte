@@ -339,8 +339,10 @@ class AnomalyHunter(NTEOneTimeTask, BaseCombatTask):
             self.log_info("发现BOSS宝箱, 跳过战斗")
         else:
             self.log_info("未发现BOSS宝箱, 调用战斗模块")
-            self.walk_until_combat(run=True, delay=1)
-            self.combat_once(retarget_turn=False)
+            if self.walk_until_combat(run=True, delay=1):
+                self.combat_once(retarget_turn=False)
+            else:
+                return False
 
         self.log_info("调用领取BOSS宝箱模块")
 
