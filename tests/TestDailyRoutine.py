@@ -1,6 +1,6 @@
-from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 from src.tasks.AnomalyHunter import AnomalyHunter
 from src.tasks.AnomalyTask import AnomalyTask
@@ -18,6 +18,7 @@ class TestDailyRoutineConfig(unittest.TestCase):
     def _routine_task(self, items):
         task = object.__new__(DailyRoutineTask)
         task.config = {DailyRoutineTask.CONF_ITEMS: items}
+        task.routine_task_configs = {}
         return task
 
     def test_normalize_appends_missing_items_and_keeps_defaults(self):
@@ -49,9 +50,20 @@ class TestDailyRoutineConfig(unittest.TestCase):
         self.assertIs(entries["daily_anomaly"].task_class, AnomalyTask)
         self.assertIs(entries["daily_anomaly_hunter"].task_class, AnomalyHunter)
 
-    def test_daily_task_config_is_saved_in_the_routine_without_changing_normal_config(self):
+    @patch("src.tasks.daily.DailyRoutineTask.Config")
+    def test_on_create_uses_a_separate_task_config_store(self, config_class):
+        task = self._routine_task([])
+
+        task.on_create()
+
+        config_class.assert_called_once_with(
+            DailyRoutineTask.TASK_CONFIGS_FILE_NAME,
+            DailyRoutineTask.default_task_configs(),
+        )
+        self.assertIs(task.routine_task_configs, config_class.return_value)
+
+    def test_daily_task_config_is_saved_separately_without_changing_normal_config(self):
         routine_task = self._routine_task([])
-        routine_task.config[DailyRoutineTask.CONF_TASK_CONFIGS] = {}
         normal_config = {"领取邮件": True}
         candidate = SimpleNamespace(
             config=normal_config,
@@ -65,7 +77,7 @@ class TestDailyRoutineConfig(unittest.TestCase):
 
         self.assertEqual(normal_config, {"领取邮件": True})
         self.assertEqual(
-            routine_task.config[DailyRoutineTask.CONF_TASK_CONFIGS]["daily_claim"],
+            routine_task.routine_task_configs["daily_claim"],
             {"领取邮件": False},
         )
 
@@ -86,7 +98,7 @@ class TestDailyRoutineConfig(unittest.TestCase):
 
     def test_daily_anomaly_config_normalizes_existing_field_order(self):
         routine_task = self._routine_task([])
-        routine_task.config[DailyRoutineTask.CONF_TASK_CONFIGS] = {
+        routine_task.routine_task_configs = {
             "daily_anomaly": {
                 AnomalyTask.CONF_TASK_TYPE: AnomalyTask.TASK_EXP_COIN,
                 AnomalyTask.CONF_STAMINA_TARGET: 120,
@@ -100,14 +112,19 @@ class TestDailyRoutineConfig(unittest.TestCase):
 
         routine_task.daily_task_config("daily_anomaly", candidate)
 
-        saved = routine_task.config[DailyRoutineTask.CONF_TASK_CONFIGS]["daily_anomaly"]
+        saved = routine_task.routine_task_configs["daily_anomaly"]
         self.assertEqual(next(iter(saved)), AnomalyTask.CONF_STAMINA_TARGET)
         self.assertEqual(saved[AnomalyTask.CONF_STAMINA_TARGET], 120)
 
     def test_daily_anomaly_cycle_is_saved_to_the_routine_config(self):
         task = object.__new__(DailyRoutineTask)
-        task.config = {DailyRoutineTask.CONF_TASK_CONFIGS: {}}
-        task.task_status = {"success": [], "failed": [], "skipped": [], "pending": ["daily_anomaly"]}
+        task.routine_task_configs = {}
+        task.task_status = {
+            "success": [],
+            "failed": [],
+            "skipped": [],
+            "pending": ["daily_anomaly"],
+        }
         task.current_task_key = None
         task._active_routine_task = None
         task.sleep_check_interval = 1
@@ -144,11 +161,11 @@ class TestDailyRoutineConfig(unittest.TestCase):
         self.assertIsNot(observed["config"], normal_config)
         self.assertIn(
             AnomalyTask.CONF_CYCLEB_TASK_MODE,
-            task.config[DailyRoutineTask.CONF_TASK_CONFIGS]["daily_anomaly"],
+            task.routine_task_configs["daily_anomaly"],
         )
         self.assertNotIn(
             BaseNTETask.CONF_CLAIM_REWARD_COUNT,
-            task.config[DailyRoutineTask.CONF_TASK_CONFIGS]["daily_anomaly"],
+            task.routine_task_configs["daily_anomaly"],
         )
 
     def test_selected_tasks_follow_persisted_order(self):
@@ -254,7 +271,8 @@ class TestDailyRoutineStart(unittest.TestCase):
         task.current_task_key = None
         task._active_routine_task = None
         task.sleep_check_interval = 1
-        task.config = {DailyRoutineTask.CONF_TASK_CONFIGS: {}}
+        task.config = {}
+        task.routine_task_configs = {}
         first = Mock(name="领取", enabled=False, running=False)
         second = Mock(name="一咖舍", enabled=False, running=False)
         for child in (first, second):
@@ -283,7 +301,8 @@ class TestDailyRoutineStart(unittest.TestCase):
         task = object.__new__(DailyRoutineTask)
         task._active_routine_task = None
         task.sleep_check_interval = 1
-        task.config = {DailyRoutineTask.CONF_TASK_CONFIGS: {}}
+        task.config = {}
+        task.routine_task_configs = {}
         normal_config = {"normal": True}
         child = SimpleNamespace(
             sleep_check_interval=0.2,

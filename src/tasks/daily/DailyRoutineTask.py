@@ -3,6 +3,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 
 from ok import TaskDisabledException
+from ok.util.config import Config
 from qfluentwidgets import FluentIcon
 
 from src.tasks.AnomalyHunter import AnomalyHunter
@@ -81,7 +82,7 @@ class _DailyTaskSchema:
 
 
 class _DailyTaskConfig(dict):
-    """A task config view persisted under the daily routine's config file."""
+    """A task config view persisted in the daily routine task-config store."""
 
     def __init__(self, routine_task, task_id, task, default_config):
         self.routine_task = routine_task
@@ -89,8 +90,7 @@ class _DailyTaskConfig(dict):
         self.task = task
         self.default = deepcopy(default_config)
         values = deepcopy(self.default)
-        stored = routine_task.config.get(routine_task.CONF_TASK_CONFIGS, {})
-        stored_values = stored.get(task_id) if isinstance(stored, dict) else None
+        stored_values = routine_task.routine_task_configs.get(task_id)
         if isinstance(stored_values, dict):
             for key, value in stored_values.items():
                 if key in values and isinstance(value, type(values[key])):
@@ -126,30 +126,27 @@ class _DailyTaskConfig(dict):
         self.save_file()
 
     def save_file(self):
-        task_configs = self.routine_task.config.get(self.routine_task.CONF_TASK_CONFIGS, {})
-        task_configs = deepcopy(task_configs) if isinstance(task_configs, dict) else {}
-        task_configs[self.task_id] = deepcopy(dict(self))
-        self.routine_task.config[self.routine_task.CONF_TASK_CONFIGS] = task_configs
+        self.routine_task.routine_task_configs[self.task_id] = deepcopy(dict(self))
 
 
 class DailyRoutineTask(NTEOneTimeTask, BaseNTETask):
     CONF_ITEMS = "Routine Items"
-    CONF_TASK_CONFIGS = "Routine Task Configs"
+    TASK_CONFIGS_FILE_NAME = "DailyRoutineTaskConfigs"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = "日常任务"
         self.support_schedule_task = True
+        self.show_in_task_tab = False
         self.icon = FluentIcon.CAR
         self.visible = True
         self.task_status = {"success": [], "failed": [], "skipped": [], "pending": []}
         self.current_task_key = None
         self._active_routine_task = None
+        self.routine_task_configs = None
         self.default_config[self.CONF_ITEMS] = self.default_items()
-        self.default_config[self.CONF_TASK_CONFIGS] = {}
         self.config_description[self.CONF_ITEMS] = "日常任务中的任务顺序和启用状态"
         self.config_type[self.CONF_ITEMS] = {"hidden": True}
-        self.config_type[self.CONF_TASK_CONFIGS] = {"hidden": True}
         self.add_exit_after_config()
 
     @staticmethod
@@ -160,10 +157,18 @@ class DailyRoutineTask(NTEOneTimeTask, BaseNTETask):
         ]
 
     @staticmethod
+    def default_task_configs():
+        return {entry.task_id: {} for entry in DAILY_ROUTINE_ENTRIES}
+
+    @staticmethod
     def entries_by_id():
         return {entry.task_id: entry for entry in DAILY_ROUTINE_ENTRIES}
 
     def on_create(self):
+        self.routine_task_configs = Config(
+            self.TASK_CONFIGS_FILE_NAME,
+            self.default_task_configs(),
+        )
         self.normalize_items()
 
     def normalize_items(self):
