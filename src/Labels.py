@@ -56,6 +56,7 @@ class Labels(str, Enum):
     heist_timer = 'heist_timer'
     icecar_lights = 'icecar_lights'
     in_domain = 'in_domain'
+    in_domain_2 = 'in_domain_2'
     interactable = 'interactable'
     is_current_char = 'is_current_char'
     launcher_popup_close = 'launcher_popup_close'
