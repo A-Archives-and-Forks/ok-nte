@@ -6,7 +6,8 @@ from src.tasks.BaseNTETask import BaseNTETask
 from src.tasks.NTEOneTimeTask import NTEOneTimeTask
 from src.tasks.trigger.SkipDialogTask import SkipDialogTask
 
-
+INST = "进入比赛后开始任务"
+EN_INST = "Start the mission after entering the game"
 class VolleyballTask(NTEOneTimeTask, BaseNTETask):
     CONF_MODE = "模式"
     MODE_EXP = "刷经验"
@@ -29,6 +30,7 @@ class VolleyballTask(NTEOneTimeTask, BaseNTETask):
                 }
             }
         )
+        self.instructions = INST if self.is_chinese() else EN_INST
         self.sleep_check_interval = 0.2
 
     def run(self):
