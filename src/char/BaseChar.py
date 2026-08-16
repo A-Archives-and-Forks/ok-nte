@@ -704,7 +704,7 @@ class BaseChar:
             if not self.task.find_one(
                 Labels.box_ultimate,
                 template=processed_snapshot,
-                box=box_ultimate,
+                box=box_ultimate.scale(1.1, 1.1),
                 frame_processor=gf.isolate_text_to_black,
                 threshold=0.7,
             ):

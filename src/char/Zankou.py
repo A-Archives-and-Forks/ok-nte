@@ -41,7 +41,7 @@ class Zankou(BaseChar):
             if self.find_ult_purple():
                 yield ultimate
                 self.task.wait_until(
-                    self.ultimate_available, post_action=self.click_with_interval, time_out=2
+                    self.ultimate_available, post_action=self.click_with_interval, time_out=3
                 )
                 yield ultimate.repeat_for_entry()
 
