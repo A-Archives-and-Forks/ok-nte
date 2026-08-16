@@ -5,27 +5,58 @@ import win32con
 from src.tasks.trigger.HeistTask import HeistTask
 
 
+class _KeyboardEvent:
+    def __init__(self, vk_code):
+        self.flags = 0
+        self.vkCode = vk_code
+
+
+class _Listener:
+    def __init__(self):
+        self.suppressed_event_count = 0
+
+    def suppress_event(self):
+        self.suppressed_event_count += 1
+
+
 class TestHeistTask(unittest.TestCase):
-    def test_repeat_shift_down_does_not_suppress_release_when_initial_down_was_forwarded(self):
-        task = object.__new__(HeistTask)
-        task.physical_keys_pressed = {win32con.VK_LSHIFT}
-        task.suppressed_keys = set()
-        task._is_active = lambda: True
-        task._suppressed_trigger_keys = lambda: set(task.SHIFT_KEYS)
-
-        self.assertFalse(task._should_suppress(win32con.WM_KEYDOWN, win32con.VK_LSHIFT, True))
-        self.assertFalse(task._should_suppress(win32con.WM_KEYUP, win32con.VK_LSHIFT))
-
-    def test_repeat_of_suppressed_shift_down_stays_suppressed_until_release(self):
+    def test_shift_release_immediately_ends_quick_run_interception(self):
         task = object.__new__(HeistTask)
         task.physical_keys_pressed = {win32con.VK_LSHIFT}
         task.suppressed_keys = {win32con.VK_LSHIFT}
+        task.listener = _Listener()
         task._is_active = lambda: True
-        task._suppressed_trigger_keys = lambda: set(task.SHIFT_KEYS)
+        task._log_target_key_event = lambda *args: None
+        task._pick_key_pressed = False
+        task._shift_pressed = True
+        task._shift_down_time = 1
+        task._quick_running = True
+        task._quick_run_index = 1
+        task._quick_run_time = 1
+        task._quick_run_step = 1
 
-        self.assertTrue(task._should_suppress(win32con.WM_KEYDOWN, win32con.VK_LSHIFT, True))
-        self.assertTrue(task._should_suppress(win32con.WM_KEYUP, win32con.VK_LSHIFT))
+        task._win32_filter(win32con.WM_KEYUP, _KeyboardEvent(win32con.VK_LSHIFT))
+
+        self.assertEqual(task.physical_keys_pressed, set())
         self.assertNotIn(win32con.VK_LSHIFT, task.suppressed_keys)
+        self.assertFalse(task._quick_running)
+        self.assertEqual(task.listener.suppressed_event_count, 1)
+
+        task._win32_filter(win32con.WM_KEYDOWN, _KeyboardEvent(win32con.VK_LSHIFT))
+
+        self.assertEqual(task.listener.suppressed_event_count, 1)
+
+    def test_pick_key_is_suppressed_until_release(self):
+        task = object.__new__(HeistTask)
+        pick_key = ord("F")
+        task.physical_keys_pressed = {pick_key}
+        task.suppressed_keys = set()
+        task._is_active = lambda: True
+        task._suppressed_trigger_keys = lambda: {pick_key}
+
+        self.assertTrue(task._should_suppress(win32con.WM_KEYDOWN, pick_key))
+        self.assertTrue(task._should_suppress(win32con.WM_KEYUP, pick_key))
+        self.assertNotIn(pick_key, task.suppressed_keys)
 
 
 if __name__ == "__main__":
