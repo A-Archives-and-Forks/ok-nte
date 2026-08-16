@@ -268,6 +268,7 @@ class BaseChar:
         self,
         name: str | None = None,
         tags: set[Planner.ActionTag] | None = None,
+        add_tags: set[Planner.ActionTag] | Planner.ActionTag | None = None,
         reason: str = "arc action available",
         can_execute=None,
         priority_ready: ActionPredicate | None = None,
@@ -286,10 +287,15 @@ class BaseChar:
         """
 
         name = name or f"{self.__str__()}_arc"
-        action_tags = tags or {Planner.ActionTag.ARC_ACTION}
+        tags = set(tags) if tags else {Planner.ActionTag.ARC_ACTION}
+        if add_tags:
+            if isinstance(add_tags, (set, list, tuple)):
+                tags.update(add_tags)
+            else:
+                tags.add(add_tags)
 
         return self.planner_action(
-            tags=action_tags,
+            tags=tags,
             slot=Planner.ActionSlot.ARC,
             execute=lambda context: self.click_arc(),
             name=name,
@@ -302,6 +308,7 @@ class BaseChar:
         self,
         name: str | None = None,
         tags: set[Planner.ActionTag] | None = None,
+        add_tags: set[Planner.ActionTag] | Planner.ActionTag | None = None,
         reason: str = "ultimate action available",
         can_execute=None,
     ):
@@ -322,10 +329,15 @@ class BaseChar:
         """
 
         name = name or f"{self.__str__()}_ultimate"
-        action_tags = tags or {Planner.ActionTag.ULTIMATE_ACTION}
+        tags = set(tags) if tags else {Planner.ActionTag.ULTIMATE_ACTION}
+        if add_tags:
+            if isinstance(add_tags, (set, list, tuple)):
+                tags.update(add_tags)
+            else:
+                tags.add(add_tags)
 
         return self.planner_action(
-            tags=action_tags,
+            tags=tags,
             slot=Planner.ActionSlot.ULTIMATE,
             execute=lambda context: self.click_ultimate(),
             name=name,
@@ -340,6 +352,7 @@ class BaseChar:
         self,
         name: str | None = None,
         tags: set[Planner.ActionTag] | None = None,
+        add_tags: set[Planner.ActionTag] | Planner.ActionTag | None = None,
         reason: str = "skill action available",
         down_time: float = 0.01,
         can_execute=None,
@@ -362,10 +375,15 @@ class BaseChar:
         """
 
         name = name or f"{self.__str__()}_skill"
-        action_tags = tags or {Planner.ActionTag.SKILL_ACTION}
+        tags = set(tags) if tags else {Planner.ActionTag.SKILL_ACTION}
+        if add_tags:
+            if isinstance(add_tags, (set, list, tuple)):
+                tags.update(add_tags)
+            else:
+                tags.add(add_tags)
 
         return self.planner_action(
-            tags=action_tags,
+            tags=tags,
             slot=Planner.ActionSlot.SKILL,
             execute=lambda context: self.click_skill(down_time=down_time),
             name=name,

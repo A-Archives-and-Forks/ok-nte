@@ -311,6 +311,21 @@ class TestCombatPlanner(unittest.TestCase):
         self.assertEqual(decision.target, dps)
         self.assertIn("dps", decision.reason)
 
+    def test_team_buff_skill_outranks_main_dps_ultimate(self):
+        current = self._setup_char(0, "current", max_field_time=0)
+        dps = self._main_dps(1, "dps", tags={ActionTag.ULTIMATE_ACTION})
+        support = self._support(
+            2,
+            "support",
+            tags={ActionTag.SKILL_ACTION, ActionTag.SUPPORT, ActionTag.TEAM_BUFF},
+        )
+        planner = self._planner([current, dps, support])
+
+        decision = planner.decide_switch(current)
+
+        self.assertEqual(decision.target, support)
+        self.assertGreater(decision.priority, 320)
+
     def test_normal_switch_excludes_current_from_scoring(self):
         dps = self._main_dps(0)
         support = self._support(1)
