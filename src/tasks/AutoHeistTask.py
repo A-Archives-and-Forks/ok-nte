@@ -546,7 +546,7 @@ class AutoHeistTask(NTEOneTimeTask, BaseCombatTask):
 
     def has_extract_panel(self):
         """检查当前画面是否出现“安全撤离”面板。"""
-        return self.find_one(Labels.heist_exit)
+        return self.find_one(Labels.heist_exit_panel)
 
     def is_in_team_outside_heist(self):
         """判断角色已回到队伍界面，但已经不在粉爪副本内。"""
