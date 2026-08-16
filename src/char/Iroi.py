@@ -1,5 +1,6 @@
 
 from src.char.Support import Support
+from src.combat.planner import Planner
 
 
 class Iroi(Support):
@@ -11,7 +12,7 @@ class Iroi(Support):
         self._mouse_pressed = False
 
     def combat_plan(self, context):
-        skill = self.click_skill_action()
+        skill = self.click_skill_action(add_tags=Planner.ActionTag.TEAM_BUFF)
         ultimate = self.click_ultimate_action()
 
         def entry():

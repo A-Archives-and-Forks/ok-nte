@@ -776,6 +776,9 @@ class BaseChar:
             self.add_freeze_duration(animation_start, time.time() - animation_start)
         if clicked:
             self.last_skill_time = skill_click_time
+            self.task.wait_until(
+                lambda: not self.skill_available(check_color=False), settle_time=0.3, time_out=1
+            )
             self.sleep(post_sleep)
         duration = time.time() - skill_click_time if skill_click_time != 0 else 0
         return clicked, duration, animation_start > 0
