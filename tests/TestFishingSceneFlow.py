@@ -3,8 +3,8 @@ from itertools import count
 from unittest.mock import patch
 
 from src.scene_flow import SceneFlow, SceneReplan
-from src.tasks.BaseNTETask import RoundState
 from src.tasks.FishingTask import FishingSession, FishingTask
+from src.tasks.mixin.RoundMixin import RoundState
 
 
 class TestFishingSceneFlow(unittest.TestCase):
