@@ -80,12 +80,13 @@ ok-nte 是一款面向《异环》的 Windows 自动化工具，通过截图识�
 
 ## 📚 使用文档
 
-| 使用场景 | 文档 |
+| 你要做什么 | 推荐入口 |
 | --- | --- |
-| 配置游戏画面、按键和窗口 | [使用前配置](docs/zh-CN/getting-started/configuration.md) |
-| 启动第一个任务 | [快速上手](docs/zh-CN/guides/quick-start.md) |
+| 第一次使用 ok-nte | [安装](docs/zh-CN/getting-started/installation.md) → [使用前配置](docs/zh-CN/getting-started/configuration.md) → [快速上手](docs/zh-CN/guides/quick-start.md) |
+| 了解项目功能 | [功能概览](docs/zh-CN/features/overview.md) |
 | 更新卡住、识别或启动异常 | [常见问题与反馈](docs/zh-CN/guides/troubleshooting.md) |
-| 在线阅读完整文档 | [中文文档站](https://bnanz0.github.io/ok-nte/zh-CN/) |
+| 从源码运行或参与开发 | [开发文档](docs/zh-CN/development/running-from-source.md) |
+| 查看全部详细内容 | [中文文档站](https://ok-script.com/ok-nte/docs/) |
 
 ## 💬 社区与交流
 

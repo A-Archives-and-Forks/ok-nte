@@ -83,13 +83,13 @@ For source setup and detailed installation steps, see the [installation guide](d
 
 ## 📚 Documentation
 
-| Use case | Documentation |
+| What you want to do | Recommended entry |
 | --- | --- |
-| Configure the game, controls, and window | [Before you start](docs/en/getting-started/configuration.md) |
-| Run the first task | [Quick start](docs/en/guides/quick-start.md) |
-| Read the full feature list | [Feature overview](docs/en/features/overview.md) |
-| Report a problem | [FAQ and feedback](docs/en/guides/troubleshooting.md) |
-| Read the full documentation online | [Documentation site](https://bnanz0.github.io/ok-nte/en/) |
+| Use ok-nte for the first time | [Installation](docs/en/getting-started/installation.md) → [Before you start](docs/en/getting-started/configuration.md) → [Quick start](docs/en/guides/quick-start.md) |
+| Learn what the project supports | [Feature overview](docs/en/features/overview.md) |
+| The update is stuck or a task has problems | [FAQ and feedback](docs/en/guides/troubleshooting.md) |
+| Run from source or contribute | [Development documentation](docs/en/development/running-from-source.md) |
+| Read the complete documentation | [Documentation site](https://ok-script.com/ok-nte/en/docs/) |
 
 ## 💬 Community
 
