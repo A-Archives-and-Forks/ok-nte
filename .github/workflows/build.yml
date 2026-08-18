@@ -17,7 +17,7 @@ env:
   SIGN_BUILD: 'true'
   SIGN_SETUP: 'false'
   BUILD_EXE: 'true'
-  USE_RELEASE: 'https://api.github.com/repos/BnanZ0/ok-nte/releases/tags/v1.2.25'
+  USE_RELEASE: '' #'https://api.github.com/repos/BnanZ0/ok-nte/releases/tags/v1.2.25'
 
 defaults:
   run:
@@ -96,6 +96,7 @@ jobs:
         with:
           repos: |
             https://cnb:${{ secrets.CNB_GH }}@cnb.cool/BnanZ0/ok-nte-update.git
+            https://BnanZ0:${{ secrets.OK_GH }}@github.com/BnanZ0/ok-nte-update.git
           sync_list: 'deploy.txt'
           tag: ${{ github.ref_name }}
           gitignore_file: '.update_repo_gitignore'
