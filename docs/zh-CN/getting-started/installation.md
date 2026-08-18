@@ -22,7 +22,7 @@
 
 此方法需要您具备 Python 环境，适合希望进行二次开发或调试的用户。
 
-1. **环境要求**：确保已安装 **Python 3.12** 或更高版本。
+1. **环境要求**：确保已安装 **Python 3.12**。
 2. **克隆仓库**：
    ```bash
    git clone https://github.com/BnanZ0/ok-nte.git

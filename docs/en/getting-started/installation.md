@@ -20,7 +20,7 @@ This method is suitable for most users. It's simple, fast, and supports automati
 
 This method requires a Python environment and is suitable for users who want to contribute, modify, or debug the code.
 
-1.  **Prerequisites**: Ensure you have **Python 3.12** or a newer version installed.
+1.  **Prerequisites**: Ensure you have **Python 3.12** installed.
 2.  **Clone the repository**:
     ```bash
     git clone https://github.com/BnanZ0/ok-nte.git

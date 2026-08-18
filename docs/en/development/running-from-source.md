@@ -2,7 +2,7 @@
 
 ## Environment Setup
 
-- Python 3.12 or later.
+- Python 3.12.
 - [uv](https://docs.astral.sh/uv/) is recommended.
 - A Windows development environment.
 
