@@ -111,16 +111,11 @@ pynput==1.8.2 ; sys_platform == 'win32'
     #   ok-nte
     #   ok-script
 pyside6==6.11.1 ; sys_platform == 'win32'
-    # via
-    #   ok-nte
-    #   pyside6-fluent-widgets
-pyside6-addons==6.11.1 ; sys_platform == 'win32'
-    # via pyside6
+    # via pyside6-fluent-widgets
 pyside6-essentials==6.11.1 ; sys_platform == 'win32'
     # via
     #   ok-script
     #   pyside6
-    #   pyside6-addons
 pyside6-fluent-widgets==1.11.3 ; sys_platform == 'win32'
     # via ok-script
 pysidesix-frameless-window==0.8.2 ; sys_platform == 'win32'
@@ -152,7 +147,6 @@ shapely==2.1.2 ; sys_platform == 'win32'
 shiboken6==6.11.1 ; sys_platform == 'win32'
     # via
     #   pyside6
-    #   pyside6-addons
     #   pyside6-essentials
 six==1.17.0 ; sys_platform == 'win32'
     # via

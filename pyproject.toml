@@ -15,7 +15,6 @@ dependencies = [
     "openvino>=2026.3.0",
     "psutil>=7.2.2",
     "pynput>=1.8.2",
-    "pyside6==6.11.1",
     "scikit-image>=0.26.0",
     "sounddevice>=0.5.6",
     "pywin32==311",
@@ -42,4 +41,8 @@ known-third-party = ["ok"]
 [tool.uv]
 environments = [
     "sys_platform == 'win32'"
+]
+
+exclude-dependencies = [
+    "pyside6-addons",
 ]
