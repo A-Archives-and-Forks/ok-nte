@@ -44,6 +44,11 @@ nav:
           - Overview: en/features/overview.md
           - Quick start: en/guides/quick-start.md
           - FAQ and feedback: en/guides/troubleshooting.md
+      - Development:
+          - Contributing and verification: en/development/contributing.md
+          - Running from source: en/development/running-from-source.md
+          - SceneFlow author guide: en/development/scene_flow.md
+          - Combat Planner guide: en/development/combat-planner.md
   - 简体中文:
       - 首页: zh-CN/index.md
       - 开始使用:
@@ -53,11 +58,11 @@ nav:
           - 功能概览: zh-CN/features/overview.md
           - 快速上手: zh-CN/guides/quick-start.md
           - 常见问题与反馈: zh-CN/guides/troubleshooting.md
-  - Development:
-      - Contributing: development/contributing.md
-      - Running from source: development/running-from-source.md
-      - SceneFlow author guide: development/scene_flow.md
-      - Combat Planner guide: development/combat-planner.md
+      - 开发:
+          - 贡献与验证: zh-CN/development/contributing.md
+          - 从源码运行: zh-CN/development/running-from-source.md
+          - SceneFlow 作者指南: zh-CN/development/scene_flow.md
+          - Combat Planner 开发指南: zh-CN/development/combat-planner.md
 
 markdown_extensions:
   - admonition
