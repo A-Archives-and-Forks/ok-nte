@@ -15,6 +15,8 @@ dependencies = [
     "openvino>=2026.3.0",
     "psutil>=7.2.2",
     "pynput>=1.8.2",
+    "PySide6-Essentials==6.11.1",
+    "pyside6-fluent-widgets==1.11.3",
     "scikit-image>=0.26.0",
     "sounddevice>=0.5.6",
     "pywin32==311",
@@ -44,5 +46,6 @@ environments = [
 ]
 
 exclude-dependencies = [
-    "pyside6-addons",
+    { package = { name = "pyside6-fluent-widgets" },
+      dependencies = ["pyside6"] },
 ]
