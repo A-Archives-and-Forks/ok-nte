@@ -1,6 +1,7 @@
 import sys
 import threading
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -150,6 +151,25 @@ class SoundListenerTests(unittest.TestCase):
 
         self.assertEqual(listener.attempts, 1)
         self.assertFalse(listener.is_running)
+
+    def test_listener_start_returns_false_when_thread_start_fails(self):
+        from src.sound_trigger.SoundListener import SoundListener
+
+        class FailingListener(SoundListener):
+            def _load_samples(self):
+                pass
+
+        listener = FailingListener(sample_path="", counter_attack_sample_path="")
+
+        with patch(
+            "src.sound_trigger.SoundListener.threading.Thread.start",
+            side_effect=RuntimeError("simulated thread startup failure"),
+        ):
+            self.assertFalse(listener.start())
+
+        self.assertFalse(listener._running)
+        self.assertIsNone(listener._stop_event)
+        self.assertIsNone(listener._listener_thread)
 
 
 if __name__ == "__main__":

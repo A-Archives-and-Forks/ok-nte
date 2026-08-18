@@ -451,7 +451,7 @@ class LauncherTask(BaseNTETask):
                 return True
 
             matches.append(hwnd)
-            return True
+            return not win32gui.IsWindowVisible(hwnd)
 
         win32gui.EnumWindows(callback, None)
         if not matches:

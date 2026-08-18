@@ -142,7 +142,7 @@ class TestDailyRoutineConfig(unittest.TestCase):
             active_task.config[AnomalyTask.CONF_CYCLEB_TASK_MODE] = AnomalyTask.CYCLE_SUB_TASK
 
         child = SimpleNamespace(
-            name="异象界域",
+            name=AnomalyTask.TASK_NAME,
             enabled=False,
             running=False,
             sleep_check_interval=1,

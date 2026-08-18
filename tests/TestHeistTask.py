@@ -20,6 +20,22 @@ class _Listener:
 
 
 class TestHeistTask(unittest.TestCase):
+    def test_get_vk_codes_always_returns_three_slots(self):
+        task = object.__new__(HeistTask)
+
+        vk_codes = [
+            task._get_vk_codes(None),
+            task._get_vk_codes("shift"),
+            task._get_vk_codes("lshift"),
+            task._get_vk_codes("f1"),
+            task._get_vk_codes("f"),
+            task._get_vk_codes("invalid"),
+        ]
+
+        self.assertTrue(all(len(codes) == HeistTask.VK_CODE_SLOT_COUNT for codes in vk_codes))
+        self.assertEqual(task._get_valid_vk_codes("shift"), HeistTask.KEY_MAP["shift"])
+        self.assertEqual(task._get_valid_vk_codes("f1"), (win32con.VK_F1,))
+
     def test_shift_release_immediately_ends_quick_run_interception(self):
         task = object.__new__(HeistTask)
         task.physical_keys_pressed = {win32con.VK_LSHIFT}
