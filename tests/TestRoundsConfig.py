@@ -1,6 +1,7 @@
 import unittest
 
-from src.tasks.BaseNTETask import BaseNTETask, RoundState
+from src.tasks.BaseNTETask import BaseNTETask
+from src.tasks.mixin.RoundMixin import RoundState
 
 
 class TestRoundsConfig(unittest.TestCase):

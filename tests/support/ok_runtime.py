@@ -35,8 +35,8 @@ import threading
 import ok as _ok
 import ok.test as _ok_test
 import ok.test.TaskTestCase as _ok_task_test_case
-from ok.gui.Communicate import communicate
 from ok.task.TaskExecutor import TaskExecutor
+from ok.ui.qt.Communicate import communicate
 from ok.util.handler import ExitEvent
 
 _ORIGINALS_ATTR = "_ok_nte_runtime_isolation_originals"
@@ -77,7 +77,27 @@ def install_ok_test_runtime_isolation() -> None:
             test_config["analytics"] = None
             test_config["check_mutex"] = False
             test_config["debug"] = True
+            # Test discovery starts a fresh ok runtime for each TaskTestCase
+            # class. Avoid reopening the shared application log on every
+            # setup, which is unnecessary for these tests and can be locked
+            # by another local ok-script process on Windows.
+            test_config["disable_file_log"] = True
             test_config["use_gui"] = False
+            # TaskTestCase creates the task under test itself. Do not
+            # initialize the application's unrelated task registry during
+            # every class setup.
+            test_config["onetime_tasks"] = []
+            test_config["trigger_tasks"] = []
+            # The nested GUI config takes precedence over the legacy
+            # use_gui flag. Disable it explicitly so TaskTestCase suites use
+            # ok-script's HeadlessApp and do not create QApplication.
+            test_config["gui"] = None
+            # HeadlessApp defaults to en_US, while TaskTestCase sets the
+            # language through ok's Qt config before calling init_ok(). Keep
+            # translations consistent with the suite's selected language.
+            from ok.ui.qt.util.app import cfg as qt_config
+
+            test_config["locale"] = qt_config.get(qt_config.language).value.name()
             test_config["my_app"] = None
             test_config["blur_area"] = None
 
