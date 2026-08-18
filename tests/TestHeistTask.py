@@ -51,14 +51,14 @@ class TestHeistTask(unittest.TestCase):
         task._quick_run_time = 1
         task._quick_run_step = 1
 
-        task._win32_filter(win32con.WM_KEYUP, _KeyboardEvent(win32con.VK_LSHIFT))
+        self.assertFalse(task._win32_filter(win32con.WM_KEYUP, _KeyboardEvent(win32con.VK_LSHIFT)))
 
         self.assertEqual(task.physical_keys_pressed, set())
         self.assertNotIn(win32con.VK_LSHIFT, task.suppressed_keys)
         self.assertFalse(task._quick_running)
         self.assertEqual(task.listener.suppressed_event_count, 1)
 
-        task._win32_filter(win32con.WM_KEYDOWN, _KeyboardEvent(win32con.VK_LSHIFT))
+        self.assertTrue(task._win32_filter(win32con.WM_KEYDOWN, _KeyboardEvent(win32con.VK_LSHIFT)))
 
         self.assertEqual(task.listener.suppressed_event_count, 1)
 

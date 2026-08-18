@@ -400,9 +400,10 @@ class HeistTask(BaseNTETask, TriggerTask):
                 self._reset_quick_run()
 
         listener = self.listener
-        if listener is not None and self._should_suppress(msg, data.vkCode):
+        should_suppress = listener is not None and self._should_suppress(msg, data.vkCode)
+        if should_suppress:
             listener.suppress_event()
-        return True
+        return not should_suppress
 
     def _is_key_pressed(self, key):
         return any(
