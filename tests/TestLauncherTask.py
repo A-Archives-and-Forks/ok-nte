@@ -69,3 +69,22 @@ class TestLauncherTask(unittest.TestCase):
             hwnd_class="Qt51517QWindowOwnDC",
             require_title=False,
         )
+
+    def test_find_window_callback_continues_after_visible_match(self):
+        task = self._make_task()
+
+        def enum_windows(callback, _):
+            self.assertTrue(callback(101, None))
+            self.assertTrue(callback(102, None))
+
+        with (
+            patch("src.tasks.LauncherTask.win32gui.EnumWindows", side_effect=enum_windows),
+            patch("src.tasks.LauncherTask.win32gui.IsWindow", return_value=True),
+            patch("src.tasks.LauncherTask.win32gui.IsWindowEnabled", return_value=True),
+            patch(
+                "src.tasks.LauncherTask.win32process.GetWindowThreadProcessId",
+                return_value=(0, 1),
+            ),
+            patch("src.tasks.LauncherTask.win32gui.IsWindowVisible", side_effect=[True, False]),
+        ):
+            self.assertEqual(task._find_window_for_process({"pid": 1}), 101)

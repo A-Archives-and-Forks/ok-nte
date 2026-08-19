@@ -451,7 +451,8 @@ class LauncherTask(BaseNTETask):
                 return True
 
             matches.append(hwnd)
-            return not win32gui.IsWindowVisible(hwnd)
+            # EnumWindows treats False as an aborted enumeration and pywin32 raises an error.
+            return True
 
         win32gui.EnumWindows(callback, None)
         if not matches:
