@@ -447,11 +447,11 @@ class CharManagerTab(CustomTab):
             self.logger.error(str(e))
             return
 
-        # Reload DB from disk and refresh UI
+        # Scan imported external code before migrating its persisted implementation IDs.
+        char_registry.rescan_external()
         self.manager.load_db()
-        self.manager.migrate_db_schema()
         self.manager.validate_db()
-        self.on_refresh_btn_clicked()
+        self.refresh_list()
         char_manager_signals.refresh_tab.emit()
 
         InfoBar.success(

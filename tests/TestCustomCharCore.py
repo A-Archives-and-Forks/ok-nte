@@ -398,7 +398,7 @@ class TestCustomCharCore(unittest.TestCase):
             "skill\nif ultimate: wait(0.1)\narc",
         )
         self.assertEqual(manager.get_combo("combo_b"), "l_click(2)")
-        with open(f"{self.db_path}.pre-v7.bak", encoding="utf-8") as file:
+        with open(f"{self.db_path}.pre-v{DB_SCHEMA_VERSION}.bak", encoding="utf-8") as file:
             self.assertEqual(json.load(file), legacy)
 
         CustomCharManager._instance = None
