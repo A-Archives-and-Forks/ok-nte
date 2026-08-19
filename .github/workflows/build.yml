@@ -87,8 +87,7 @@ jobs:
           ) | ForEach-Object {
             Remove-Item "Env:\$_" -ErrorAction SilentlyContinue
           }
-
-          python -m unittest discover -s tests -p "*test*.py" --top-level-directory . -v
+          python -m unittest discover -s tests -p "*test*.py" --top-level-directory . -v 2>&1
 
       - name: Synchronize update repository
         id: sync
