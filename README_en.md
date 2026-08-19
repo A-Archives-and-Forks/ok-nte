@@ -43,27 +43,24 @@ ok-nte is a Windows automation tool for <em>Neverness To Everness</em>. It inter
 
 See the [feature overview](docs/en/features/overview.md) for the complete list.
 
-## ⚠️ Usage Risks
+## ⚠️ Disclaimer
+
+> [!CAUTION]
+> **This software is an open-source, free external tool intended for learning and exchange purposes only. It is designed to automate the gameplay of *Neverness To Everness* by interacting with the game solely through the existing user interface and in compliance with relevant laws and regulations.**
+>
+> - **Mechanism**: The package is intended to provide a simplified way for users to interact with the game. This package does not modify any game files or game code in any way.
+> - **Purpose**: It is not meant to disrupt the game balance or provide any unfair advantage.
+> - **Liability**: All issues and consequences arising from the use of this software are not related to this project or its development team. The development team reserves the final right of interpretation for this project.
+> - **Commercialization**: If you encounter vendors using this software for services and charging a fee, this may cover their costs for equipment and time; any resulting problems or consequences are not associated with this software.
 
 > [!WARNING]
-> This software is an open-source, free external tool intended for learning and exchange purposes only. It interacts with the game solely through the existing user interface and does not modify game files or code.
+> **Please Note: According to the [*Neverness To Everness* Fair Play Declaration](https://nte.perfectworld.com/en/article/news/gamebroad/20260206/260828.html):**
 >
-> Using third-party tools may violate the official game rules and put accounts at risk. Please read the [*Neverness To Everness* Fair Play Declaration](https://nte.perfectworld.com/en/article/news/gamebroad/20260206/260828.html) and voluntarily accept all risks associated with using this tool.
-
-<details>
-<summary>Full disclaimer</summary>
-
-This software is an open-source, free external tool intended for learning and exchange purposes only. It is designed to
-automate the gameplay of *Neverness To Everness* by interacting with the game solely through the existing user interface
-and in compliance with relevant laws and regulations. The package is intended to provide a simplified way for users to
-interact with the game and is not meant to disrupt the game balance or provide any unfair advantage. This package does
-not modify any game files or game code in any way.
-
-All issues and consequences arising from the use of this software are not related to this project or its development
-team. The development team reserves the final right of interpretation for this project. If you encounter vendors using
-this software for services and charging a fee, this may cover their costs for equipment and time; any resulting problems
-or consequences are not associated with this software.
-</details>
+> The use of any third-party tools that undermine fair gameplay is strictly prohibited. We will take strong action against violations involving illegal tools such as cheats, speed hacks, macro scripts, and similar software.
+>
+> Prohibited behaviors include, but are not limited to: auto-farming, skill acceleration, god mode, teleportation, and game data manipulation. Any account found to be involved in such activities will be banned upon verification.
+>
+> **You should fully understand and voluntarily assume all potential risks associated with using this tool.**
 
 ## 🚀 Download & Installation
 
