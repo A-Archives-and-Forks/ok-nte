@@ -44,12 +44,17 @@ jobs:
           set PYTHONLEGACYWINDOWSSTDIO=utf-8
           echo PYTHONIOENCODING=utf-8 >> $GITHUB_ENV
 
-      - name: Install Dependencies
-        run: |
-          pip install -r requirements.txt
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install dependencies
+        run: uv pip install --system -r requirements.txt
 
       - name: Run tests
         run: |
-          python -m unittest discover -s tests -p "*test*.py" --top-level-directory . -v
+          python -m unittest discover -s tests -p "*test*.py" --top-level-directory . -v 2>&1
 
   
