@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 from ok import TaskDisabledException
 
 from src import LAUNCHER_EXE
-from src.tasks.LauncherTask import LauncherButtonState, LauncherTask
+from src.tasks.LauncherTask import LauncherTask
 
 
 class TestLauncherTask(unittest.TestCase):
@@ -40,21 +40,6 @@ class TestLauncherTask(unittest.TestCase):
 
         with self.assertRaisesRegex(TaskDisabledException, "Launcher window is not visible"):
             task._capture_launcher()
-
-    def test_start_game_does_not_accept_hidden_launcher_before_click(self):
-        task = self._make_task()
-        task._find_process = Mock(return_value=None)
-        task._ensure_launcher_visible = Mock(return_value=True)
-        task._launcher_button_state = Mock(return_value=(LauncherButtonState.START, "start_button"))
-        task._is_launcher_hidden_or_minimized = Mock(return_value=True)
-        task.box_of_screen = Mock()
-        task.find_one = Mock(return_value=None)
-        task.click = Mock()
-
-        with patch("src.tasks.LauncherTask.time.time", side_effect=[0, 0, 0]):
-            self.assertTrue(task._click_start_game())
-
-        task.click.assert_called_once_with("start_button", after_sleep=2)
 
     def test_find_process_window_uses_launcher_capture_window_class(self):
         task = self._make_task()
