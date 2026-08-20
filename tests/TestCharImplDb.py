@@ -54,6 +54,9 @@ class TestCharImplDb(unittest.TestCase):
         self.assertEqual(persisted["characters"]["char_builtin"]["impl_id"], "builtin:zero")
         self.assertEqual(persisted["characters"]["char_custom"]["impl_id"], "combo_text")
         self.assertNotIn("combo_id", persisted["characters"]["char_builtin"])
+        self.assertNotIn("fixed_team", persisted)
+        self.assertEqual(persisted["team_presets"][0]["name"], "固定队伍")
+        self.assertTrue(persisted["team_presets"][0]["is_fixed"])
         self.assertEqual(database.get_fixed_team()["slots"][0]["impl_id"], "builtin:zero")
 
     def test_builtin_registry_generates_id_from_the_character_module(self):
@@ -121,8 +124,68 @@ class TestCharImplDb(unittest.TestCase):
             persisted = json.load(file)
         self.assertEqual(persisted["characters"]["char_hero"]["impl_id"], "external:测试队伍/hero")
         self.assertEqual(
-            persisted["fixed_team"]["slots"][0]["impl_id"], "external:测试队伍/hero"
+            persisted["team_presets"][0]["slots"][0]["impl_id"], "external:测试队伍/hero"
         )
+
+    def test_presets_apply_and_fixed_projection(self):
+        database = CustomCharDb(self.db_path, self.features_dir, self.context)
+        combo_a = database.add_combo("A", "skill")
+        combo_b = database.add_combo("B", "ultimate")
+        char_a = database.create_character("A", combo_a)
+        char_b = database.create_character("B", combo_a)
+        preset = database.create_team_preset("Boss")
+        self.assertTrue(
+            database.update_team_preset(
+                preset["id"],
+                slots=[
+                    {"char_id": char_a, "impl_id": combo_b},
+                    {"char_id": char_b, "impl_id": ""},
+                ],
+            )
+        )
+
+        self.assertEqual(database.apply_team_preset(preset["id"]), [char_a])
+        self.assertEqual(database.get_character_record(char_a)["impl_id"], combo_b)
+        self.assertEqual(database.get_character_record(char_b)["impl_id"], combo_a)
+        self.assertEqual(database.apply_team_preset(preset["id"], fixed=True), [char_a])
+        self.assertTrue(database.get_fixed_team()["enabled"])
+        self.assertEqual(database.get_fixed_team()["slots"][0]["char_id"], char_a)
+        self.assertTrue(database.clear_fixed_team_preset())
+        self.assertFalse(database.get_fixed_team()["enabled"])
+
+    def test_presets_reject_duplicates_and_clean_deleted_references(self):
+        database = CustomCharDb(self.db_path, self.features_dir, self.context)
+        combo_id = database.add_combo("A", "skill")
+        char_id = database.create_character("A", combo_id)
+        preset = database.create_team_preset("Team")
+        duplicate_slots = [
+            {"char_id": char_id, "impl_id": combo_id},
+            {"char_id": char_id, "impl_id": combo_id},
+        ]
+        self.assertFalse(database.update_team_preset(preset["id"], slots=duplicate_slots))
+        self.assertTrue(
+            database.update_team_preset(
+                preset["id"], slots=[{"char_id": char_id, "impl_id": combo_id}]
+            )
+        )
+        database.delete_combo(combo_id)
+        self.assertEqual(database.get_team_presets()[0]["slots"][0]["impl_id"], "")
+        database.delete_character(char_id)
+        self.assertEqual(database.get_team_presets()[0]["slots"][0], {"char_id": "", "impl_id": ""})
+
+    def test_failed_preset_update_does_not_apply_the_name(self):
+        database = CustomCharDb(self.db_path, self.features_dir, self.context)
+        char_id = database.create_character("A", "")
+        preset = database.create_team_preset("Before")
+
+        self.assertFalse(
+            database.update_team_preset(
+                preset["id"],
+                name="After",
+                slots=[{"char_id": char_id}, {"char_id": char_id}],
+            )
+        )
+        self.assertEqual(database.get_team_presets()[0]["name"], "Before")
 
     def test_external_registry_scans_one_nested_folder_and_prefixes_display_name(self):
         external_dir = Path(self.temp_dir) / "external_chars"

@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 from ok.test.TaskTestCase import TaskTestCase
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from src.char.custom.CustomChar import CustomChar
@@ -13,7 +14,7 @@ from src.char.custom.CustomCharManager import CustomCharManager
 from src.config import config
 from src.tasks.trigger.AutoCombatTask import AutoCombatTask
 from src.ui.CharManagerTab import CharManagerTab
-from src.ui.TeamManagerTab import TeamManagerTab
+from src.ui.TeamManagerTab import AddCharacterDialog, TeamManagerTab
 
 PREDEFINED_CHARACTER_ID = "builtin:zero"
 
@@ -318,6 +319,115 @@ class TestCustomChar(TaskTestCase):
         self.assertEqual(slot.current_confidence, 1.0)
         self.assertIn(slot.tr_confidence.format(1.0), slot.status.text())
         self.assertFalse(slot.btn_act.isEnabled())
+
+    def test_team_manager_command_bar_adds_character(self):
+        tab = TeamManagerTab(manager=self.manager)
+        dialog = MagicMock()
+        dialog.exec.return_value = True
+        dialog.get_data.return_value = ("command_bar_char", "", "", "")
+
+        with patch("src.ui.TeamManagerTab.AddCharacterDialog", return_value=dialog):
+            tab.on_add_character()
+
+        char_id = self._character_id_by_name(self.manager, "command_bar_char")
+        self.assertTrue(char_id)
+        self.assertTrue(tab.fixed_action.isCheckable())
+
+    def test_add_character_dialog_disables_confirm_for_duplicate_name(self):
+        self.manager.create_character("existing_dialog_char", "")
+        dialog = AddCharacterDialog(self.manager)
+
+        dialog.char_name_edit.setText("existing_dialog_char")
+
+        self.assertFalse(dialog.yesButton.isEnabled())
+        self.assertFalse(dialog.name_error_label.isHidden())
+
+        dialog.char_name_edit.setText("new_dialog_char")
+
+        self.assertTrue(dialog.yesButton.isEnabled())
+        self.assertTrue(dialog.name_error_label.isHidden())
+
+    def test_team_manager_presets_apply_and_fixed_use(self):
+        tab = TeamManagerTab(manager=self.manager)
+        combo_a = self.manager.add_combo("combo_preset_a", "skill")
+        combo_b = self.manager.add_combo("combo_preset_b", "ultimate")
+        char_id = self.manager.create_character("preset_char", combo_a)
+        tab.reload_preset_options()
+
+        tab.on_create_preset()
+        preset_id = tab.current_preset_id
+        self.assertIsNotNone(preset_id)
+        tab.preset_rows[0].set_data(char_id, combo_b)
+        tab.on_preset_slot_changed(0)
+
+        preset = next(
+            preset for preset in self.manager.get_team_presets() if preset["id"] == preset_id
+        )
+        self.assertEqual(preset["slots"][0], {"char_id": char_id, "impl_id": combo_b})
+        tab.on_apply_preset()
+        self.assertEqual(self.manager.get_character_info_by_id(char_id)["impl_id"], combo_b)
+
+        tab.on_toggle_fixed_preset()
+        self.assertTrue(self.manager.get_fixed_team()["enabled"])
+        self.assertEqual(self.manager.get_fixed_team()["slots"][0]["char_id"], char_id)
+        tab.on_toggle_fixed_preset()
+        self.assertFalse(self.manager.get_fixed_team()["enabled"])
+
+    def test_team_manager_preset_search_keeps_the_selected_preset_visible(self):
+        tab = TeamManagerTab(manager=self.manager)
+        first = self.manager.create_team_preset("alpha")
+        second = self.manager.create_team_preset("beta")
+        tab.reload_presets(first["id"])
+
+        tab.preset_list.search_edit.setText("beta")
+
+        self.assertEqual(tab.current_preset_id, second["id"])
+        self.assertEqual(
+            tab.preset_list.currentItem().data(Qt.ItemDataRole.UserRole), second["id"]
+        )
+        self.assertFalse(tab.preset_list.currentItem().isHidden())
+
+    def test_team_manager_preset_slot_selects_and_clears_the_character_combo(self):
+        tab = TeamManagerTab(manager=self.manager)
+        combo_id = self.manager.add_combo("combo_auto_select", "skill")
+        char_id = self.manager.create_character("auto_select_char", combo_id)
+        tab.reload_preset_options()
+        tab.on_create_preset()
+        row = tab.preset_rows[0]
+
+        row.char_combo.setCurrentIndex(row.char_combo.findData(char_id))
+
+        self.assertEqual(row.get_data(), (char_id, combo_id))
+
+        row.char_combo.setCurrentIndex(0)
+
+        self.assertEqual(row.get_data(), ("", ""))
+        self.assertEqual(row.combo_list.currentIndex(), 0)
+
+    def test_team_manager_fills_only_empty_preset_slots(self):
+        tab = TeamManagerTab(manager=self.manager)
+        combo_id = self.manager.add_combo("combo_scan_fill", "skill")
+        first_id = self.manager.create_character("first", combo_id)
+        second_id = self.manager.create_character("second", combo_id)
+        tab.reload_preset_options()
+        tab.on_create_preset()
+        tab.preset_rows[0].set_data(first_id, combo_id)
+        tab.on_preset_slot_changed(0)
+        tab.last_scan_results = [
+            {"index": 0, "match": second_id},
+            {"index": 1, "match": second_id},
+        ]
+
+        tab.on_fill_from_scan()
+
+        preset = next(
+            preset
+            for preset in self.manager.get_team_presets()
+            if preset["id"] == tab.current_preset_id
+        )
+        self.assertEqual(preset["slots"][0]["char_id"], first_id)
+        self.assertEqual(preset["slots"][1]["char_id"], second_id)
+        self.assertEqual(preset["slots"][1]["impl_id"], combo_id)
 
     def test_builtin_combo_roundtrip(self):
         builtin_id = PREDEFINED_CHARACTER_ID

@@ -40,6 +40,7 @@ def get_tr(text):
 
 
 COMBO = get_tr("出招表")
+CHAR = get_tr("角色")
 TEAM_MANAGEMENT = get_tr("队伍管理")
 
 EXTERNAL_CODE_SAFETY_TITLE = "外置代码安全提示 / External Code Safety Notice"

@@ -960,6 +960,10 @@ class BaseCombatTask(CharElementUIMixin, CombatCheck):
                     fixed_impl_id = ""
                 else:
                     fixed_char_name = char_info["char_name"]
+                    # A preset can pin a character without pinning its combo. In that
+                    # case keep using the character's current global implementation.
+                    if not fixed_impl_id:
+                        fixed_impl_id = char_info["impl_id"]
                     self.logger.info(
                         f"Using fixed char {index}: {fixed_char_name} {fixed_impl_id}"
                     )

@@ -590,12 +590,13 @@ class TestCustomCharCore(unittest.TestCase):
         self.assertEqual(result.db["combos"]["combo_0"]["content"], "skill")
         self.assertEqual(result.db["characters"]["char_0001"]["impl_id"], "combo_0")
         self.assertEqual(
-            result.db["fixed_team"]["slots"][0],
+            result.db["team_presets"][0]["slots"][0],
             {
                 "char_id": "char_0001",
                 "impl_id": PREDEFINED_CHARACTER_ID,
             },
         )
+        self.assertTrue(result.db["team_presets"][0]["is_fixed"])
 
 
 if __name__ == "__main__":

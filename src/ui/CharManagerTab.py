@@ -1042,7 +1042,7 @@ class CharManagerTab(CustomTab):
     def show_combo_flyout(self):
         Flyout.create(
             icon=InfoBarIcon.INFORMATION,
-            title="Tips",
+            title=self.tr("提示"),
             content=self.tr_combo_tips,
             target=self.combo_info_btn,
             parent=self,
