@@ -1045,6 +1045,7 @@ class BaseNTETask(
             action=lambda: self.operate(
                 lambda: self.scroll(x, y, count=count),
                 block=True,
+                restore_cursor=False
             ),
             snap_box=snap_box,
             check_box=check_box,
