@@ -1,7 +1,6 @@
 from ok import og, relative_box
-from ok.ui.qt.Communicate import communicate
 from ok.ui.qt.widget.CustomTab import CustomTab
-from PySide6.QtCore import QObject, Qt, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QCursor
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QListWidgetItem, QVBoxLayout, QWidget
 from qfluentwidgets import (
@@ -22,17 +21,17 @@ from qfluentwidgets import (
     TitleLabel,
 )
 
+from src.events import (
+    GiftCaptureCompleted,
+    GiftCaptureRequested,
+    GiftRunRequested,
+    GiftRunState,
+    communicate,
+)
 from src.gifts.GiftManager import GiftManager
-from src.tasks.daily.GiftTask import GiftTask
-from src.ui.common import BorderCardWidget, cv_to_pixmap
-from src.ui.util import ensure_scan_capture
-
-
-class GiftManagerSignals(QObject):
-    capture_done = Signal(object, str, str, object)
-
-
-gift_manager_signals = GiftManagerSignals()
+from src.gifts.layout import GIFT_LAYOUT
+from src.ui.foundation.images import cv_to_pixmap
+from src.ui.foundation.widgets.cards import BorderCardWidget
 
 
 class GiftPriorityCard(BorderCardWidget):
@@ -114,7 +113,7 @@ class GiftManagerTab(CustomTab):
     def __init__(self):
         super().__init__()
         self.icon = FluentIcon.HEART
-        self.tr_name = og.app.tr("羁遇赠礼")
+        self.tr_name = self.tr("羁遇赠礼")
         self.manager = GiftManager()
         self.current_profile_id: str | None = None
         self._loading_profile = False
@@ -137,15 +136,15 @@ class GiftManagerTab(CustomTab):
         self.enabled_switch.checkedChanged.connect(self._save_current_options)
         self.count_combo.currentIndexChanged.connect(self._save_current_options)
         self.name_edit.editingFinished.connect(self._save_current_options)
-        gift_manager_signals.capture_done.connect(self._on_capture_done)
-        communicate.task.connect(self._on_framework_task_changed)
-        communicate.task_done.connect(self._on_framework_task_done)
+        communicate.gift_capture_completed.connect(self._on_capture_completed)
+        communicate.gift_run_state.connect(self._on_run_state)
 
         self._refresh_profiles()
-        self._refresh_task_controls()
+        self.start_button.setEnabled(True)
+        self.stop_button.setEnabled(False)
 
     @property
-    def name(self):
+    def name(self): # type: ignore
         return self.tr_name
 
     def _update_enabled_status(self, enabled: bool) -> None:
@@ -261,12 +260,6 @@ class GiftManagerTab(CustomTab):
             parent=self.window(),
         )
 
-    def _gift_task(self) -> GiftTask | None:
-        try:
-            return self.get_task(GiftTask)
-        except (AttributeError, RuntimeError):
-            return None
-
     def _refresh_profiles(self, selected_id=None) -> None:
         selected_id = selected_id or self.current_profile_id
         self.profile_list.blockSignals(True)
@@ -329,7 +322,9 @@ class GiftManagerTab(CustomTab):
         frame = self.manager.load_frame(profile)
         if frame is not None:
             height, width = frame.shape[:2]
-            name_box = relative_box(width, height, *GiftTask.NAME_RATIO, name="gift_character_name")
+            name_box = relative_box(
+                width, height, *GIFT_LAYOUT.name_ratio, name="gift_character_name"
+            )
             name_image = name_box.crop_frame(frame)
             self.name_preview.setImage(
                 cv_to_pixmap(name_image).scaled(
@@ -341,21 +336,21 @@ class GiftManagerTab(CustomTab):
             )
             priorities = {slot: index + 1 for index, slot in enumerate(profile["selected_slots"])}
             blocked_slots = set(profile.get("blocked_slots", []))
-            first_x, first_y, first_to_x, first_to_y = GiftTask.GIFT_FIRST_RATIO
+            first_x, first_y, first_to_x, first_to_y = GIFT_LAYOUT.gift_first_ratio
             expand_ratio = 0.016
             first_y -= expand_ratio
             first_to_y += expand_ratio
             box_width = first_to_x - first_x
             box_height = first_to_y - first_y
-            for index in range(GiftTask.GIFT_ROWS * GiftTask.GIFT_COLUMNS):
-                row, column = divmod(index, GiftTask.GIFT_COLUMNS)
+            for index in range(GIFT_LAYOUT.gift_rows * GIFT_LAYOUT.gift_columns):
+                row, column = divmod(index, GIFT_LAYOUT.gift_columns)
                 gift_box = relative_box(
                     width,
                     height,
-                    first_x + column * GiftTask.GIFT_COLUMN_STEP,
-                    first_y + row * GiftTask.GIFT_ROW_STEP,
-                    first_x + column * GiftTask.GIFT_COLUMN_STEP + box_width,
-                    first_y + row * GiftTask.GIFT_ROW_STEP + box_height,
+                    first_x + column * GIFT_LAYOUT.gift_column_step,
+                    first_y + row * GIFT_LAYOUT.gift_row_step,
+                    first_x + column * GIFT_LAYOUT.gift_column_step + box_width,
+                    first_y + row * GIFT_LAYOUT.gift_row_step + box_height,
                     name=f"gift_slot_{index}",
                 )
                 card = GiftPriorityCard(
@@ -401,60 +396,46 @@ class GiftManagerTab(CustomTab):
         self.capture_button.setEnabled(False)
         self.recapture_button.setEnabled(False)
         self._pending_recapture_id = profile_id
-        og.app.start_controller.handler.post(self._capture_in_worker)
+        communicate.gift_capture_requested.emit(GiftCaptureRequested(profile_id))
 
-    def _capture_in_worker(self) -> None:
-        error = ensure_scan_capture()
-        if error:
-            gift_manager_signals.capture_done.emit(None, error, "", [])
-            return
-        task = self._gift_task()
-        if not task:
-            gift_manager_signals.capture_done.emit(None, og.app.tr("赠礼任务未注册"), "", [])
-            return
-        frame = task.frame
-        if frame is None or not getattr(frame, "size", 0):
-            gift_manager_signals.capture_done.emit(None, og.app.tr("没有可用的游戏画面"), "", [])
-            return
-        name = og.app.tr("未命名角色")
-        try:
-            results = task.ocr(box=task.get_name_box(), frame=frame)
-            recognized = "".join(str(result.name).strip() for result in results or [])
-            if recognized:
-                name = recognized
-        except Exception as error:
-            task.log_debug(f"gift capture name OCR failed: {type(error).__name__}")
-        blocked_slots = []
-        try:
-            blocked_slots = [
-                index
-                for index, badge_box in enumerate(task.get_unlimit_gift_boxes())
-                if task.find_one("unlimit_gift", box=badge_box, frame=frame)
-            ]
-        except Exception as error:
-            task.log_debug(f"gift capture unlimited-gift detection failed: {type(error).__name__}")
-        gift_manager_signals.capture_done.emit(frame, "", name, blocked_slots)
+    def _on_capture_completed(self, event: GiftCaptureCompleted) -> None:
+        self._on_capture_done(
+            event.frame,
+            event.error,
+            event.recognized_name,
+            list(event.blocked_slots),
+            event.profile_id,
+        )
+
+    def _on_run_state(self, event: GiftRunState) -> None:
+        self.start_button.setEnabled(not event.active)
+        self.stop_button.setEnabled(event.active)
 
     def _on_capture_done(
-        self, frame, error: str, recognized_name: str, blocked_slots: list[int]
+        self,
+        frame,
+        error: str,
+        recognized_name: str,
+        blocked_slots: list[int],
+        profile_id: str | None,
     ) -> None:
         self.capture_button.setEnabled(True)
         self.recapture_button.setEnabled(self.current_profile_id is not None)
         if error:
             self._show_error(og.app.tr("捕获失败"), error)
             return
-        profile = self.manager.get_profile(getattr(self, "_pending_recapture_id", None))
+        profile = self.manager.get_profile(profile_id)
         try:
             if profile:
                 self.manager.recapture_profile(
-                    self._pending_recapture_id,
+                    profile_id,
                     frame,
                     profile["selected_slots"],
                     profile["target_count"],
                     profile["display_name"],
                     blocked_slots=blocked_slots,
                 )
-                selected_id = self._pending_recapture_id
+                selected_id = profile_id
             else:
                 selected_id = self.manager.create_profile(
                     recognized_name or og.app.tr("未命名角色"),
@@ -480,44 +461,11 @@ class GiftManagerTab(CustomTab):
                 og.app.tr("无法开始"), og.app.tr("请先捕获、选择礼物并启用至少一个角色。")
             )
             return
-        task = self._gift_task()
-        if not task:
-            self._show_error(og.app.tr("无法开始"), og.app.tr("赠礼任务未注册"))
-            return
-        og.app.start_controller.start(task)
-        self._refresh_task_controls(task)
+        communicate.gift_run_requested.emit(GiftRunRequested(True))
+        self.start_button.setEnabled(False)
+        self.stop_button.setEnabled(True)
 
     def _stop_run(self) -> None:
-        task = self._gift_task()
-        if not task:
-            return
-        if task.executor.current_task is task:
-            task.executor.stop_current_task()
-        else:
-            task.disable()
-            task.unpause()
-        self._refresh_task_controls(task)
-
-    def _on_framework_task_changed(self, task) -> None:
-        if task is None or isinstance(task, GiftTask):
-            self._refresh_task_controls(task)
-
-    def _on_framework_task_done(self, task) -> None:
-        if isinstance(task, GiftTask):
-            self._refresh_task_controls(task)
-
-    def _refresh_task_controls(self, task=None) -> None:
-        task = task or self._gift_task()
-        if not task:
-            # CustomTab receives its executor after construction. Keep Start available until then.
-            self.start_button.setEnabled(True)
-            self.stop_button.setEnabled(False)
-            return
-        active = task.running or task.enabled
-        self.stop_button.setEnabled(active)
-        if task.paused:
-            self.start_button.setText(og.app.tr("继续赠礼"))
-            self.start_button.setEnabled(True)
-        else:
-            self.start_button.setText(og.app.tr("开始赠礼"))
-            self.start_button.setEnabled(not active)
+        communicate.gift_run_requested.emit(GiftRunRequested(False))
+        self.start_button.setEnabled(True)
+        self.stop_button.setEnabled(False)

@@ -52,14 +52,14 @@ from src.midi_player import (
     SongStats,
 )
 from src.midi_player.preparation import store_prepared_analysis, submit_midi_analysis
-from src.ui.common import FluentSystemIcon
-from src.ui.midi_player.widgets import (
+from src.ui.features.midi.widgets import (
     CollapsibleSection,
     KeyConfigWidget,
     MarqueeBodyLabel,
     MarqueeSubtitleLabel,
     PitchChartWidget,
 )
+from src.ui.foundation.icons import FluentSystemIcon
 
 MIDI_PLAYER_CONFIG_DEFAULTS = {
     "pitch": 0,
@@ -99,8 +99,8 @@ class MidiPlayerTab(CustomTab):
     def __init__(self):
         super().__init__()
         self.icon = FluentIcon.MUSIC
-        self.tr_name_tab = og.app.tr("自动弹琴")
-        self.tr_no_song_selected = og.app.tr("未选择歌曲")
+        self.tr_name_tab = self.tr("自动弹琴")
+        self.tr_no_song_selected = self.tr("未选择歌曲")
         self.is_playing = False
         self.is_favorite = False
         self.favorite_active_icon = FluentSystemIcon.HEART_FILL.colored("#E81123", "#FF99A4")
@@ -178,7 +178,7 @@ class MidiPlayerTab(CustomTab):
         self.progress_container.setVisible(False)
 
     @property
-    def name(self):
+    def name(self): # type: ignore
         return self.tr_name_tab
 
     def setup_left_panel(self):
@@ -708,7 +708,7 @@ class MidiPlayerTab(CustomTab):
             item = QTreeWidgetItem([song.title])
             item.setData(0, Qt.ItemDataRole.UserRole, song.id)
             if song.favorite:
-                item.setText(0, f"♥ {song.title}")
+                item.setIcon(0, self.favorite_active_icon.icon())
             item.setToolTip(0, item.text(0))
             if parent_item is None:
                 self.song_tree_widget.addTopLevelItem(item)
@@ -1263,7 +1263,7 @@ class MidiPlayerTab(CustomTab):
                 return
             self.selected_song_id = song_id
             song = self.songs_by_id.get(song_id)
-            display_name = song.title if song else current.text(0).lstrip("♥ ")
+            display_name = song.title if song else current.text(0)
             self.selection_card.titleLabel.setText(display_name)
             if self.playing_song_id is None:
                 self.lbl_track_name.setText(display_name)
@@ -1298,23 +1298,6 @@ class MidiPlayerTab(CustomTab):
             reset_position = self.playing_song_id is None
             song_id = self.playing_song_id or self.selected_song_id
             if song_id:
-                from src.ui.util import ensure_scan_capture
-
-                error_msg = ensure_scan_capture()
-                if error_msg:
-                    from PySide6.QtCore import Qt
-                    from qfluentwidgets import InfoBar, InfoBarPosition
-
-                    InfoBar.error(
-                        title="",
-                        content=error_msg,
-                        orient=Qt.Orientation.Horizontal,
-                        isClosable=True,
-                        position=InfoBarPosition.TOP,
-                        duration=3500,
-                        parent=self.window(),
-                    )
-                    return
                 self._restart_playback_when_ready(song_id, reset_position=reset_position)
 
     def on_play_selected_clicked(self):
@@ -1322,24 +1305,6 @@ class MidiPlayerTab(CustomTab):
 
     def play_selected_song(self):
         if not self.selected_song_id:
-            return
-
-        from src.ui.util import ensure_scan_capture
-
-        error_msg = ensure_scan_capture()
-        if error_msg:
-            from PySide6.QtCore import Qt
-            from qfluentwidgets import InfoBar, InfoBarPosition
-
-            InfoBar.error(
-                title="",
-                content=error_msg,
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=3500,
-                parent=self.window(),
-            )
             return
 
         song_id = self.selected_song_id

@@ -12,6 +12,7 @@ from src.char.custom.CustomChar import CustomChar
 from src.char.custom.CustomCharDb import CustomCharDb
 from src.char.custom.CustomCharManager import CustomCharManager
 from src.config import config
+from src.events import TeamScanCompleted, TeamScanResult, communicate
 from src.tasks.trigger.AutoCombatTask import AutoCombatTask
 from src.ui.CharManagerTab import CharManagerTab
 from src.ui.TeamManagerTab import AddCharacterDialog, TeamManagerTab
@@ -40,44 +41,22 @@ class TestCustomChar(TaskTestCase):
         super().setUpClass()
 
     def test_scan_team(self):
-        from src.ui.TeamManagerTab import team_manager_signals
-
         self.set_image("tests/images/02.png")
-        tab = TeamManagerTab(manager=self.manager)
-
-        # 建立 Mock 物件來捕捉信號參數
         mock_handler = MagicMock()
-        # 連結至實際發射出的 scan_done 信號
-        team_manager_signals.scan_done.connect(mock_handler)
+        with (
+            patch.object(self.task, "prepare_game_capture", return_value=""),
+            communicate.team_scan_completed.subscribed(mock_handler),
+        ):
+            self.task._scan_team()
 
-        try:
-            # 執行真正的掃描 (會運用到 OCR 和 CV)
-            with (
-                patch("src.ui.util.ensure_scan_capture", return_value=""),
-                patch.object(tab, "get_task", return_value=self.task),
-            ):
-                tab.scan_team()
-
-            # 確認信號被成功發送了一次
-            mock_handler.assert_called_once()
-
-            # 獲取信號被發送時的參數
-            results, error_msg = mock_handler.call_args[0]
-            self.assertEqual(error_msg, "")
-
-            # 驗證傳出的報告結構
-            self.assertIsInstance(results, list)
-            # 因為 02.png 有隊伍，只要解析沒出錯通常 results 的長度會大於 0
-            if len(results) > 0:
-                self.assertIn("index", results[0])
-                self.assertIn("mat", results[0])
-                self.assertIn("width", results[0])
-                self.assertIn("match", results[0])
-            self.assertEqual(len(results), 4)
-        finally:
-            # 測試完畢切斷連結以避免影響其他測試
-            team_manager_signals.scan_done.disconnect(mock_handler)
-            team_manager_signals.scan_done.disconnect(tab.on_scan_done)
+        mock_handler.assert_called_once()
+        event = mock_handler.call_args.args[0]
+        self.assertIsInstance(event, TeamScanCompleted)
+        self.assertEqual(event.error, "")
+        self.assertEqual(len(event.results), 4)
+        self.assertIsInstance(event.results[0], TeamScanResult)
+        self.assertGreater(event.results[0].width, 0)
+        self.assertGreater(event.results[0].height, 0)
 
     def setUp(self):
         super().setUp()
@@ -174,9 +153,7 @@ class TestCustomChar(TaskTestCase):
             char_id, np.zeros((10, 10, 3), dtype=np.uint8), self.task.width, self.task.height
         )
         orphan_feature_id = "orphan_feature"
-        self.manager.save_feature_image(
-            orphan_feature_id, np.zeros((10, 10, 3), dtype=np.uint8)
-        )
+        self.manager.save_feature_image(orphan_feature_id, np.zeros((10, 10, 3), dtype=np.uint8))
         note_path = os.path.join(self.temp_dir, "features", "note.txt")
         with open(note_path, "w", encoding="utf-8") as file:
             file.write("keep")
@@ -279,11 +256,13 @@ class TestCustomChar(TaskTestCase):
 
         # 模擬 on_scan_done 發送了掃描成功結果
         fake_mat = np.zeros((10, 10, 3), dtype=np.uint8)
-        mock_results = [
-            {"index": 0, "mat": fake_mat, "width": 1920, "height": 1080, "match": scan_char_id},
-            # index 1 掃描到但未匹配角色字串
-            {"index": 1, "mat": fake_mat, "width": 1920, "height": 1080, "match": None},
-        ]
+        mock_results = TeamScanCompleted(
+            (
+                TeamScanResult(0, fake_mat, 1920, 1080, scan_char_id, 1.0),
+                # index 1 掃描到但未匹配角色字串
+                TeamScanResult(1, fake_mat, 1920, 1080, "", None),
+            )
+        )
 
         tab.on_scan_done(mock_results)
 
@@ -382,9 +361,7 @@ class TestCustomChar(TaskTestCase):
         tab.preset_list.search_edit.setText("beta")
 
         self.assertEqual(tab.current_preset_id, second["id"])
-        self.assertEqual(
-            tab.preset_list.currentItem().data(Qt.ItemDataRole.UserRole), second["id"]
-        )
+        self.assertEqual(tab.preset_list.currentItem().data(Qt.ItemDataRole.UserRole), second["id"])
         self.assertFalse(tab.preset_list.currentItem().isHidden())
 
     def test_team_manager_preset_slot_selects_and_clears_the_character_combo(self):
@@ -414,8 +391,8 @@ class TestCustomChar(TaskTestCase):
         tab.preset_rows[0].set_data(first_id, combo_id)
         tab.on_preset_slot_changed(0)
         tab.last_scan_results = [
-            {"index": 0, "match": second_id},
-            {"index": 1, "match": second_id},
+            TeamScanResult(0, None, 0, 0, second_id, 1.0),
+            TeamScanResult(1, None, 0, 0, second_id, 1.0),
         ]
 
         tab.on_fill_from_scan()

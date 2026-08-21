@@ -2,7 +2,7 @@ import unittest
 
 from PySide6.QtWidgets import QApplication, QDialog, QPushButton
 
-from src.ui.util import _CloseDelayGuard
+from src.ui.foundation.dialogs import _CloseDelayGuard
 
 
 class CloseDelayGuardTest(unittest.TestCase):

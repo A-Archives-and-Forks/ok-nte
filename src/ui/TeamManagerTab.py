@@ -1,9 +1,8 @@
-import traceback
 from typing import Literal
 
 from ok import og
 from ok.ui.qt.widget.CustomTab import CustomTab
-from PySide6.QtCore import QObject, Qt, QTimer, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QGridLayout,
@@ -36,25 +35,13 @@ from qfluentwidgets import (
 )
 
 from src.char.custom.CustomCharManager import CustomCharManager
-from src.tasks.trigger.AutoCombatTask import AutoCombatTask
-from src.ui.common import (
-    COMBO,
-    TEAM_MANAGEMENT,
-    BorderCardWidget,
+from src.events import TeamScanCompleted, TeamScanRequested, communicate
+from src.ui.foundation.images import cv_to_pixmap
+from src.ui.foundation.widgets.cards import BorderCardWidget
+from src.ui.foundation.widgets.search import (
     SearchableComboBox,
     SearchableListWidget,
-    char_manager_signals,
-    cv_to_pixmap,
 )
-from src.ui.TeamScanner import TeamScanError, TeamScanner
-from src.ui.util import tr_fmt
-
-
-class TeamManagerSignals(QObject):
-    scan_done = Signal(list, str)
-
-
-team_manager_signals = TeamManagerSignals()
 
 
 class NewCharDialog(MessageBoxBase):
@@ -66,7 +53,9 @@ class NewCharDialog(MessageBoxBase):
         self.manager = manager
         self.tr_title = og.app.tr("关联特征")
         self.tr_name_ph = og.app.tr("输入或选择关联的角色名称")
-        self.tr_list_ph = tr_fmt("输入或选择绑定的{combo} (可选)", combo=COMBO)
+        self.tr_list_ph = og.app.tr("输入或选择绑定的{combo} (可选)").format(
+            combo=og.app.tr("出招表")
+        )
 
         self.viewLayout.setSpacing(10)
         self.viewLayout.addWidget(
@@ -382,7 +371,6 @@ class SlotCard(BorderCardWidget):
             )
             self.btn_act.setText(self.tr_feature_added_btn)
             self.btn_act.setEnabled(False)
-            char_manager_signals.refresh_tab.emit()
             return
 
         dialog = NewCharDialog(self.current_mat, self.manager, self.window())
@@ -402,7 +390,6 @@ class SlotCard(BorderCardWidget):
                     char_id,
                     1.0,
                 )
-                char_manager_signals.refresh_tab.emit()
 
 
 class PresetSlotRow(QWidget):
@@ -512,30 +499,32 @@ class TeamManagerTab(CustomTab):
         self.current_preset_id: str | None = None
         self._loading_preset = False
 
-        self.tr_name_tab = TEAM_MANAGEMENT
-        self.tr_scan_btn = og.app.tr("扫描队伍")
-        self.tr_scanning = og.app.tr("扫描中...")
-        self.tr_no_feature = og.app.tr("未获取到特征")
-        self.tr_scan_task_missing = og.app.tr("自动战斗任务不可用")
-        self.tr_fill_failed = og.app.tr("没有可填入的角色")
-        self.tr_duplicate_character = og.app.tr("方案中不能重复选择角色")
-        self.tr_preset_save_failed = og.app.tr("方案名称重复或内容无效")
-        self.tr_apply_success = og.app.tr("已更新 {} 位角色的出招表")
-        self.tr_deleted_success = og.app.tr("已从列表移除")
+        self.tr_name_tab = self.tr("队伍管理")
+        self.tr_scan_btn = self.tr("扫描队伍")
+        self.tr_scanning = self.tr("扫描中...")
+        self.tr_no_feature = self.tr("未获取到特征")
+        self.tr_scan_task_missing = self.tr("自动战斗任务不可用")
+        self.tr_fill_failed = self.tr("没有可填入的角色")
+        self.tr_duplicate_character = self.tr("方案中不能重复选择角色")
+        self.tr_preset_save_failed = self.tr("方案名称重复或内容无效")
+        self.tr_apply_success = self.tr("已更新 {} 位角色的出招表")
+        self.tr_deleted_success = self.tr("已从列表移除")
         # ruff: disable[E501]
-        self.tr_scan_tips = tr_fmt(
+        self.tr_scan_tips = self.tr(
             '<p><b style="color: #d83b01;">注意：</b>此面板 <b style="color: #d83b01;">不会</b> 在进入战斗或更换阵容时实时自动刷新或同步显示。<br>'
             '这是个用于向数据库关联或添加 <b style="color: #0078d7;">角色特征</b> 的工具面板。<br>'
             '点击 <b style="color: #0078d7;">{scan_team}</b> 后点击 <b style="color: #0078d7;">关联或添加</b> 特征, 自动战斗时就会识别对应的角色。<br>'
             '如果不想管理 <b style="color: #0078d7;">角色特征</b>, 可以直接使用 <b style="color: #0078d7;">{fixed_team}</b> 功能。</p>',
+        ).format(
             fixed_team=self.tr("队伍方案"),
             scan_team=self.tr("扫描队伍"),
         )
-        self.tr_preset_tips = tr_fmt(
+        self.tr_preset_tips = self.tr(
             "<p>用于配置并保存常用的 4 人队伍阵容与出招表, 修改后立即生效。<br>"
             '点击 <b style="color: #0078d7;">{apply_preset}</b> 可一键更新应用方案中各角色的出招表 (未选择出招表则保持原配置不变)。<br>'
             '开启 <b style="color: #0078d7;">{fixed_preset}</b> 后自动战斗将直接采用此阵容, 无需等待特征识别 (未录入特征的角色亦可直接战斗)。<br>'
             '点击 <b style="color: #0078d7;">{fill_scan}</b> 可将上方特征扫描识别出的队伍角色快速填入当前方案。</p>',
+        ).format(
             apply_preset=self.tr("应用方案"),
             fixed_preset=self.tr("固定"),
             fill_scan=self.tr("填入扫描"),
@@ -547,10 +536,7 @@ class TeamManagerTab(CustomTab):
         self.vbox.setSpacing(16)
         self._build_ui()
 
-        team_manager_signals.scan_done.connect(
-            self.on_scan_done, Qt.ConnectionType.QueuedConnection
-        )
-        char_manager_signals.refresh_tab.connect(self.reload_preset_options)
+        communicate.team_scan_completed.connect(self.on_scan_done)
         self.reload_presets()
         QTimer.singleShot(0, self._scroll_to_top)
 
@@ -734,6 +720,7 @@ class TeamManagerTab(CustomTab):
 
     def showEvent(self, event):
         super().showEvent(event)
+        self.reload_preset_options()
         QTimer.singleShot(0, self._scroll_to_top)
 
     @property
@@ -864,7 +851,7 @@ class TeamManagerTab(CustomTab):
         if not dialog.exec():
             return
         if save_character_from_dialog(self.manager, dialog):
-            char_manager_signals.refresh_tab.emit()
+            self.reload_preset_options()
 
     def on_delete_preset(self) -> None:
         deleted_id = self.current_preset_id
@@ -879,7 +866,7 @@ class TeamManagerTab(CustomTab):
         applied = self.manager.apply_team_preset(self.current_preset_id)
         if applied is None:
             return
-        char_manager_signals.refresh_tab.emit()
+        self.reload_preset_options()
         self._show_bar(og.app.tr("已应用"), self.tr_apply_success.format(len(applied)))
 
     def on_toggle_fixed_preset(self) -> None:
@@ -893,7 +880,7 @@ class TeamManagerTab(CustomTab):
         applied = self.manager.apply_team_preset(preset["id"], fixed=True)
         if applied is None:
             return
-        char_manager_signals.refresh_tab.emit()
+        self.reload_preset_options()
         self.reload_presets(preset["id"])
         self._show_bar(og.app.tr("已应用"), self.tr_apply_success.format(len(applied)))
 
@@ -903,48 +890,25 @@ class TeamManagerTab(CustomTab):
         for card in self.slots:
             card.btn_act.hide()
             card.show_empty()
-        og.app.start_controller.handler.post(self.scan_team)
+        communicate.team_scan_requested.emit(TeamScanRequested())
 
-    def scan_team(self) -> None:
-        from src.ui.util import ensure_scan_capture
-
-        error_msg = ensure_scan_capture()
-        if error_msg:
-            team_manager_signals.scan_done.emit([], error_msg)
-            return
-        task = self.get_task(AutoCombatTask)
-        if not task:
-            team_manager_signals.scan_done.emit([], self.tr_scan_task_missing)
-            return
-        results = []
-        error_msg = ""
-        try:
-            results = TeamScanner(self.manager).scan(task)
-        except TeamScanError as error:
-            error_msg = og.app.tr(str(error))
-        except Exception as error:
-            error_msg = str(error).strip() or error.__class__.__name__
-            self.logger.error(f"扫描失败: {error_msg}\n{traceback.format_exc()}")
-        finally:
-            team_manager_signals.scan_done.emit(results, error_msg)
-
-    def on_scan_done(self, results, error_msg="") -> None:
-        self.last_scan_results = results or []
+    def on_scan_done(self, event: TeamScanCompleted) -> None:
+        self.last_scan_results = list(event.results)
         self.scan_btn.setEnabled(True)
         self.scan_btn.setText(self.tr_scan_btn)
-        if error_msg:
-            self._show_bar(og.app.tr("扫描失败"), error_msg, success=False)
+        if event.error:
+            self._show_bar(og.app.tr("扫描失败"), event.error, success=False)
             return
         updated_indices = set()
         for result in self.last_scan_results:
-            index = result.get("index")
+            index = result.index
             if 0 <= index < 4:
                 self.slots[index].update_result(
-                    result.get("mat"),
-                    result.get("width", 0),
-                    result.get("height", 0),
-                    result.get("match"),
-                    result.get("confidence"),
+                    result.image,
+                    result.width,
+                    result.height,
+                    result.character_id,
+                    result.confidence,
                 )
                 updated_indices.add(index)
         for index in range(4):
@@ -959,8 +923,8 @@ class TeamManagerTab(CustomTab):
         slots = [dict(slot) for slot in preset["slots"]]
         filled_count = 0
         for result in self.last_scan_results:
-            index = result.get("index")
-            char_id = result.get("match")
+            index = result.index
+            char_id = result.character_id
             if not (0 <= index < 4) or not char_id or slots[index]["char_id"]:
                 continue
             char_info = self.manager.get_character_info_by_id(char_id)

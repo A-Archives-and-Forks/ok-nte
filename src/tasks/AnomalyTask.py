@@ -1,5 +1,4 @@
 from ok import TaskDisabledException
-from qfluentwidgets import FluentIcon
 
 from src.combat.BaseCombatTask import BaseCombatTask
 from src.Labels import Labels
@@ -91,7 +90,6 @@ class AnomalyTask(NTEOneTimeTask, BaseCombatTask):
         super().__init__(*args, **kwargs)
         self.name = self.TASK_NAME
         self.description = "自动进行异象界域任务"
-        self.icon = FluentIcon.FLAG
         self._outer_config = None
         self.setup_config(self)
 

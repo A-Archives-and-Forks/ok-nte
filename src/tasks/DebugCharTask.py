@@ -1,5 +1,4 @@
 from ok import TaskDisabledException
-from qfluentwidgets import FluentIcon
 
 from src.char.core.CharFactory import get_char_implementation_class, iter_char_implementations
 from src.combat.BaseCombatTask import BaseCombatTask
@@ -10,7 +9,6 @@ class DebugCharTask(BaseCombatTask):
         super().__init__(*args, **kwargs)
         self.name = "Test Char"
         self.description = "Test Char"
-        self.icon = FluentIcon.SYNC
         self.char = None
         self.is_char_loaded = False
         self.char_list = [entry.impl_id for entry in iter_char_implementations()]

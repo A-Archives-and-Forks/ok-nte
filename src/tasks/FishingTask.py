@@ -52,7 +52,6 @@ class FishingTask(NTEOneTimeTask, BaseNTETask):
         super().__init__(*args, **kwargs)
         self.name = "自动钓鱼"
         self.description = "自动完成一轮或多轮钓鱼"
-        self.icon = FluentIcon.SYNC
         self.group_name = "都市闲趣"
         self.group_icon = FluentIcon.GAME
         self.add_rounds_config()

@@ -11,7 +11,7 @@ from typing import Any
 
 import psutil
 from ok import ConfigOption, og
-from ok.ui.qt.Communicate import communicate
+from ok.core.events import communicate
 from ok.util.logger import Logger
 
 from src import GAME_EXE
@@ -523,7 +523,7 @@ class _BackgroundAudioRouter:
                 timeout=_COMMAND_TIMEOUT_SECONDS,
                 check=False,
                 shell=False,
-                creationflags=subprocess.CREATE_NO_WINDOW
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
         except Exception as exc:
             logger.error("failed to route game audio with svcl", exc)
@@ -681,7 +681,7 @@ def _export_sound_items(exe_path: str):
         timeout=_COMMAND_TIMEOUT_SECONDS,
         check=False,
         shell=False,
-        creationflags=subprocess.CREATE_NO_WINDOW
+        creationflags=subprocess.CREATE_NO_WINDOW,
     )
     if result.returncode != 0:
         raise RuntimeError(f"svcl failed to list sound items, exit code {result.returncode}")

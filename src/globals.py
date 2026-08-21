@@ -2,15 +2,14 @@ import threading
 from concurrent.futures import Future, ThreadPoolExecutor
 from threading import Event
 
-from ok import Logger, get_path_relative_to_exe
-from PySide6.QtCore import QObject
+from ok import Logger, get_path_relative_to_exe, og
+from ok.core.events import communicate
 
 logger = Logger.get_logger(__name__)
 
 
-class Globals(QObject):
+class Globals:
     def __init__(self, exit_event):
-        super().__init__()
         self._thread_pool_executor_max_workers = 0
         self.thread_pool_executor = None
         self.thread_pool_exit_event = Event()
@@ -20,10 +19,39 @@ class Globals(QObject):
         self._openvino_model_async = None
         self._openvino_model_future = Future()
         self._sound_context_stop_event = Event()
+        self._runtime_services_started = False
+        self._runtime_services_lock = threading.Lock()
+        communicate.start_success.connect(self._start_runtime_services)
+        if self._should_start_runtime_services_immediately():
+            self._start_runtime_services()
+
+    @staticmethod
+    def _should_start_runtime_services_immediately():
+        ok_instance = getattr(og, "ok", None)
+        if ok_instance is None:
+            return True
+        ui_config = ok_instance.config.get("gui") or {}
+        return bool(ok_instance.args.get("headless", False)) or ui_config.get("type") not in {
+            "qt",
+            "web",
+        }
+
+    def _start_runtime_services(self, *_):
+        with self._runtime_services_lock:
+            if self._runtime_services_started or self._sound_context_stop_event.is_set():
+                return
+            self._runtime_services_started = True
         threading.Thread(
-            target=self.init_sound_context, daemon=True, name="SoundContextInit"
+            target=self.init_sound_context,
+            daemon=True,
+            name="SoundContextInit",
         ).start()
         threading.Thread(target=self.init_openvino, daemon=True, name="OpenVINOInit").start()
+
+    def on_show_main_window(self, main_window) -> None:
+        from src.ui.foundation.interactions import install_interaction_handler
+
+        install_interaction_handler(main_window)
 
     def stop(self):
         self._sound_context_stop_event.set()
@@ -209,10 +237,6 @@ class Globals(QObject):
         return self.openvino_model_async._openvino_available
 
     def init_sound_context(self):
-        from src.ui.util import wait_main_window
-
-        wait_main_window()
-
         from src.sound_trigger.SoundCombatContext import SoundCombatContext
 
         context = SoundCombatContext()
@@ -234,9 +258,6 @@ class Globals(QObject):
             context.shutdown()
 
     def init_openvino(self):
-        from src.ui.util import wait_main_window
-
-        wait_main_window()
         try:
             logger.info("openvino_model_async Using YOLO26OpenVINOAsyncDetector")
             from src.YOLO26OpenVINOAsyncDetector import YOLO26OpenVINOAsyncDetector
