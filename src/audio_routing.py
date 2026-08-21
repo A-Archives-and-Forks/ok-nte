@@ -450,8 +450,10 @@ class _BackgroundAudioRouter:
         with self._lock:
             if self._bound_exit_event is exit_event:
                 return
-            exit_event.bind_stop(self)
             self._bound_exit_event = exit_event
+        # bind_stop may call stop() synchronously when the event is already set.
+        # Do not invoke it while holding _lock, because stop() needs the same lock.
+        exit_event.bind_stop(self)
 
     def stop(self) -> None:
         self.restore_on_exit()

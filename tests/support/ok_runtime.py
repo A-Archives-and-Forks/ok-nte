@@ -56,6 +56,7 @@ _OK_GLOBAL_STATE_ATTRS = (
     "executor",
     "device_manager",
     "handler",
+    "exit_event",
     "my_app",
     "ok",
     "config",
@@ -103,6 +104,7 @@ def install_ok_test_runtime_isolation() -> None:
 
             runtime = _ok.OK(test_config)
             _ok_test.ok = runtime
+            _ok.og.exit_event = runtime.exit_event
             runtime.task_executor.debug_mode = True
             runtime.device_manager.capture_method = _ok.ImageCaptureMethod(
                 runtime.device_manager.exit_event, []

@@ -3,17 +3,18 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from src import GAME_EXE
-from src import audio_routing
+from ok.util.handler import ExitEvent
+
+from src import GAME_EXE, audio_routing
 from src.audio_routing import (
     CONF_ENABLE,
     CONF_SVCL_PATH,
     DEFAULT_RENDER_DEVICE,
-    _BackgroundAudioRouter,
-    _RouteRequest,
     _background_audio_routing_validator,
+    _BackgroundAudioRouter,
     _current_process_render_output_device,
     _parse_sound_items_csv,
+    _RouteRequest,
     audio_route_command,
     discover_output_devices,
 )
@@ -362,7 +363,9 @@ class AudioRoutingTests(unittest.TestCase):
             ],
         )
 
-    def test_router_restores_exact_render_endpoint_when_current_controller_has_multiple_outputs(self):
+    def test_router_restores_exact_render_endpoint_when_current_controller_has_multiple_outputs(
+        self,
+    ):
         router = _BackgroundAudioRouter()
         router._pending_route = _RouteRequest(
             "VoiceMeeter Input (VB-Audio VoiceMeeter VAIO)",
@@ -401,8 +404,7 @@ class AudioRoutingTests(unittest.TestCase):
                 "name": "异环",
                 "commandlinefriendlyid": "Realtek USB Audio\\Application\\异环",
                 "itemid": (
-                    "{0.0.0.00000000}.{speaker}|"
-                    "\\Device\\HarddiskVolume2\\Game\\HTGame.exe%b1"
+                    "{0.0.0.00000000}.{speaker}|\\Device\\HarddiskVolume2\\Game\\HTGame.exe%b1"
                 ),
                 "type": "Application",
                 "direction": "Render",
@@ -424,7 +426,9 @@ class AudioRoutingTests(unittest.TestCase):
 
     def test_router_skips_background_route_when_original_device_capture_fails(self):
         router = _BackgroundAudioRouter()
-        router._pending_route = _RouteRequest("USB Audio\\Device\\Speakers\\Render", save_current=True)
+        router._pending_route = _RouteRequest(
+            "USB Audio\\Device\\Speakers\\Render", save_current=True
+        )
 
         with patch.object(
             audio_routing,
@@ -440,7 +444,9 @@ class AudioRoutingTests(unittest.TestCase):
 
     def test_router_skips_background_route_when_capture_returns_default_placeholder(self):
         router = _BackgroundAudioRouter()
-        router._pending_route = _RouteRequest("USB Audio\\Device\\Speakers\\Render", save_current=True)
+        router._pending_route = _RouteRequest(
+            "USB Audio\\Device\\Speakers\\Render", save_current=True
+        )
         data = [
             {
                 "name": GAME_EXE,
@@ -612,7 +618,9 @@ class AudioRoutingTests(unittest.TestCase):
 
     def test_foreground_route_cancels_background_route_before_worker_starts(self):
         router = _BackgroundAudioRouter()
-        router._pending_route = _RouteRequest("USB Audio\\Device\\Speakers\\Render", save_current=True)
+        router._pending_route = _RouteRequest(
+            "USB Audio\\Device\\Speakers\\Render", save_current=True
+        )
         router._worker = SimpleNamespace(is_alive=lambda: True)
         config = {CONF_SVCL_PATH: "svcl.exe"}
 
@@ -656,11 +664,31 @@ class AudioRoutingTests(unittest.TestCase):
         bound = []
         exit_event = SimpleNamespace(bind_stop=lambda obj: bound.append(obj))
 
-        with patch.object(audio_routing.og, "ok", SimpleNamespace(exit_event=exit_event), create=True):
+        with patch.object(
+            audio_routing.og, "ok", SimpleNamespace(exit_event=exit_event), create=True
+        ):
             with patch.object(audio_routing.og, "exit_event", None, create=True):
                 router._bind_exit_event()
 
         self.assertEqual(bound, [router])
+
+    def test_router_does_not_hold_lock_when_exit_event_stops_immediately(self):
+        router = _BackgroundAudioRouter()
+        exit_event = ExitEvent()
+        exit_event.set()
+        lock_acquired_by_stop = []
+
+        def stop():
+            acquired = router._lock.acquire(timeout=0.2)
+            lock_acquired_by_stop.append(acquired)
+            if acquired:
+                router._lock.release()
+
+        router.stop = stop
+        with patch.object(audio_routing, "_ok_exit_event", return_value=exit_event):
+            router._bind_exit_event()
+
+        self.assertEqual(lock_acquired_by_stop, [True])
 
     def test_router_stop_restores_audio(self):
         router = _BackgroundAudioRouter()
