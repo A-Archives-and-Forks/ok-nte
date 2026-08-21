@@ -277,7 +277,7 @@ requires-dist = [
     { name = "comtypes", specifier = ">=1.4.16" },
     { name = "librosa", specifier = ">=1.0.0" },
     { name = "mido", specifier = ">=1.3.3" },
-    { name = "ok-script", extras = ["ocr", "qt"], specifier = ">=2.0.1" },
+    { name = "ok-script", extras = ["ocr", "qt"], specifier = ">=2.0.4" },
     { name = "onnxocr-ppocrv5", specifier = ">=0.0.20" },
     { name = "opencc", specifier = ">=1.4.1" },
     { name = "opencv-python", specifier = ">=5.0.0.93" },
@@ -299,7 +299,7 @@ dev = [
 
 [[package]]
 name = "ok-script"
-version = "2.0.1"
+version = "2.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mouse" },
@@ -312,9 +312,9 @@ dependencies = [
     { name = "requests" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8c/69/9d94331abd7cfa8eda91c8915f7c40da6ad580171acd7c651aa77253d9a9/ok_script-2.0.1.tar.gz", hash = "sha256:3626d09e9ee88daafd077ec4e46d7a982f6e496d6905c0ba37770dc76c82ed41", size = 1081409, upload-time = "2026-08-17T02:33:09.899Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c7/e6/f9fbac76aca85f38dc8e1464701d7a22b9e653ec8e1e2bf50d2577522f8b/ok_script-2.0.4.tar.gz", hash = "sha256:5dc3a90a12e374d72dafef8415952bcfa76035f0f5aab831de7ad8b06c2265cb", size = 1082937, upload-time = "2026-08-20T17:09:35.206Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/98/6f/050422d14d291dbfa9202e3bd0d1914ea3b762c81f586053217e8e983265/ok_script-2.0.1-py3-none-any.whl", hash = "sha256:304198b9ce7e3b520d41593e3b4c14c082c7bb4a59cc8c1422173400703c8c25", size = 1115159, upload-time = "2026-08-17T02:33:08.405Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/2f/211fd57e153057ab58756e1aa59489fca1f81c991e43fc360c765ddf5dc6/ok_script-2.0.4-py3-none-any.whl", hash = "sha256:425dcc023f8000a610bbf8de38c454e0f940e2cf3f92e67ea1d6eae2078016da", size = 1113286, upload-time = "2026-08-20T17:09:33.67Z" },
 ]
 
 [package.optional-dependencies]
