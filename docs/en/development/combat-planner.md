@@ -1,6 +1,6 @@
 # Combat Planner Development Guide
 
-> **Tip**: Concrete character implementations can be found in [`src/char`](../../src/char).
+> **Tip**: Concrete character implementations can be found in [`src/char`](../../../src/char).
 
 The planner is the team's brain. A character declares one `CombatPlan`:
 
