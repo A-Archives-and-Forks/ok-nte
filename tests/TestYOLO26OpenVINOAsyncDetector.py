@@ -55,6 +55,7 @@ class TestYOLO26OpenVINOAsyncDetector(unittest.TestCase):
         detector = YOLO26OpenVINOAsyncDetector.__new__(YOLO26OpenVINOAsyncDetector)
         detector.num_requests = 1
         detector._openvino_available = True
+        detector._openvino_unavailable_reason = None
         detector._state_lock = threading.RLock()
         detector._retired_infer_requests = []
         detector._active_request_jobs = {}
@@ -143,7 +144,7 @@ class TestYOLO26OpenVINOAsyncDetector(unittest.TestCase):
         self.assertTrue(old_request.cancelled)
         self.assertIs(detector.infer_request, new_request)
         self.assertEqual(len(new_request.started), 1)
-        self.assertEqual(detector._get_active_retired_count(), 1)
+        self.assertEqual(detector._get_active_retired_count(), 0)
 
     def test_busy_background_detect_does_not_replace_current_request(self):
         active_request = FakeInferRequest()
@@ -201,17 +202,39 @@ class TestYOLO26OpenVINOAsyncDetector(unittest.TestCase):
         self.assertEqual(detector.latest_results, ["newer"])
         self.assertEqual(detector._get_active_retired_count(), 0)
 
-    def test_retired_request_keeps_active_job_until_callback_finishes(self):
+    def test_retired_request_releases_job_when_cancel_has_no_callback(self):
         old_request = FakeInferRequest()
         detector = self._detector([old_request])
         detector._mark_request_job_started(old_request)
 
         detector._retire_request(old_request, cancel=True)
 
-        self.assertEqual(detector._get_active_retired_count(), 1)
-        self.assertIn(id(old_request), detector._active_request_jobs)
+        self.assertEqual(detector._get_active_retired_count(), 0)
+        self.assertNotIn(id(old_request), detector._active_request_jobs)
         self.assertTrue(old_request.cancelled)
         self.assertEqual(detector._retired_infer_requests[0]["request"], old_request)
+
+    @patch("src.vision.openvino_detector.communicate")
+    @patch("src.vision.openvino_detector.og.app")
+    def test_sync_timeout_disables_openvino_and_cancels_request(self, app, communicate):
+        app.tr.side_effect = lambda message: message
+        request = FakeInferRequest()
+        detector = self._detector([request])
+        detector._SYNC_WAIT_TIMEOUT = 0
+        image = np.zeros((20, 20, 3), dtype=np.uint8)
+
+        result = detector.detect_sync(image)
+
+        self.assertFalse(result)
+        self.assertFalse(detector._openvino_available)
+        self.assertEqual(
+            detector._openvino_unavailable_reason,
+            "OpenVINO 单次推理超时，已自动关闭目标检测；重启程序后会重新尝试启用。",
+        )
+        self.assertTrue(request.cancelled)
+        self.assertNotIn(id(request), detector._active_request_jobs)
+        self.assertFalse(detector.detect(image))
+        communicate.notification.emit.assert_called_once()
 
 
 if __name__ == "__main__":
