@@ -35,7 +35,8 @@ from qfluentwidgets import (
 )
 
 from src.char.custom.CustomCharManager import CustomCharManager
-from src.events import TeamScanCompleted, TeamScanRequested, communicate
+from src.events import communicate
+from src.tasks.DebugCharTask import DebugCharTask, TeamScanResult
 from src.ui.foundation.images import cv_to_pixmap
 from src.ui.foundation.widgets.cards import BorderCardWidget
 from src.ui.foundation.widgets.search import (
@@ -496,6 +497,8 @@ class TeamManagerTab(CustomTab):
         self.manager = manager or CustomCharManager()
         self.icon = FluentIcon.CAMERA
         self.last_scan_results = []
+        self.task: DebugCharTask | None = None
+        self._scan_pending = False
         self.current_preset_id: str | None = None
         self._loading_preset = False
 
@@ -503,7 +506,7 @@ class TeamManagerTab(CustomTab):
         self.tr_scan_btn = self.tr("扫描队伍")
         self.tr_scanning = self.tr("扫描中...")
         self.tr_no_feature = self.tr("未获取到特征")
-        self.tr_scan_task_missing = self.tr("自动战斗任务不可用")
+        self.tr_scan_task_missing = self.tr("角色工具任务不可用")
         self.tr_fill_failed = self.tr("没有可填入的角色")
         self.tr_duplicate_character = self.tr("方案中不能重复选择角色")
         self.tr_preset_save_failed = self.tr("方案名称重复或内容无效")
@@ -536,7 +539,7 @@ class TeamManagerTab(CustomTab):
         self.vbox.setSpacing(16)
         self._build_ui()
 
-        communicate.team_scan_completed.connect(self.on_scan_done)
+        communicate.task.connect(self._on_framework_task_changed)
         self.reload_presets()
         QTimer.singleShot(0, self._scroll_to_top)
 
@@ -549,11 +552,11 @@ class TeamManagerTab(CustomTab):
         header = QHBoxLayout()
         header.setSpacing(8)
 
-        title_label = SubtitleLabel(og.app.tr("队伍识别"), self.view)
+        title_label = SubtitleLabel(self.tr("队伍识别"), self.view)
         header.addWidget(title_label)
 
         self.scan_info_btn = TransparentToolButton(FluentIcon.INFO, self.view)
-        self.scan_info_btn.setToolTip(og.app.tr("提示"))
+        self.scan_info_btn.setToolTip(self.tr("提示"))
         self.scan_info_btn.clicked.connect(self.show_scan_flyout)
         header.addWidget(self.scan_info_btn)
         header.addStretch(1)
@@ -576,11 +579,11 @@ class TeamManagerTab(CustomTab):
     def _add_preset_section(self) -> None:
         header = QHBoxLayout()
         header.setSpacing(8)
-        preset_title = SubtitleLabel(og.app.tr("队伍方案"), self.view)
+        preset_title = SubtitleLabel(self.tr("队伍方案"), self.view)
         header.addWidget(preset_title)
 
         self.preset_info_btn = TransparentToolButton(FluentIcon.INFO, self.view)
-        self.preset_info_btn.setToolTip(og.app.tr("提示"))
+        self.preset_info_btn.setToolTip(self.tr("提示"))
         self.preset_info_btn.clicked.connect(self.show_preset_flyout)
         header.addWidget(self.preset_info_btn)
         header.addStretch(1)
@@ -600,7 +603,7 @@ class TeamManagerTab(CustomTab):
         list_layout.setSpacing(10)
 
         list_header = QHBoxLayout()
-        list_header.addWidget(StrongBodyLabel(og.app.tr("方案列表"), self.preset_list_card))
+        list_header.addWidget(StrongBodyLabel(self.tr("方案列表"), self.preset_list_card))
         list_header.addStretch(1)
         self.new_preset_btn = TransparentToolButton(FluentIcon.ADD, self.preset_list_card)
         self.new_preset_btn.clicked.connect(self.on_create_preset)
@@ -611,7 +614,7 @@ class TeamManagerTab(CustomTab):
         list_layout.addLayout(list_header)
 
         self.preset_list = SearchableListWidget(self.preset_list_card)
-        self.preset_list.setPlaceholderText(og.app.tr("搜索方案"))
+        self.preset_list.setPlaceholderText(self.tr("搜索方案"))
         self.preset_list.currentItemChanged.connect(self.on_preset_selected)
         self.preset_list.search_edit.textChanged.connect(self.on_preset_filter_changed)
         list_layout.addWidget(self.preset_list, 1)
@@ -633,20 +636,18 @@ class TeamManagerTab(CustomTab):
         self.preset_command_bar.setButtonTight(True)
 
         self.add_character_action = QAction(
-            FluentIcon.ADD.icon(), og.app.tr("新增角色"), self.preset_command_bar
+            FluentIcon.ADD.icon(), self.tr("新增角色"), self.preset_command_bar
         )
         self.add_character_action.triggered.connect(self.on_add_character)
         self.fill_from_scan_action = QAction(
-            FluentIcon.DOWNLOAD.icon(), og.app.tr("填入扫描"), self.preset_command_bar
+            FluentIcon.DOWNLOAD.icon(), self.tr("填入扫描"), self.preset_command_bar
         )
         self.fill_from_scan_action.triggered.connect(self.on_fill_from_scan)
-        self.fixed_action = QAction(
-            FluentIcon.PIN.icon(), og.app.tr("固定"), self.preset_command_bar
-        )
+        self.fixed_action = QAction(FluentIcon.PIN.icon(), self.tr("固定"), self.preset_command_bar)
         self.fixed_action.setCheckable(True)
         self.fixed_action.triggered.connect(self.on_toggle_fixed_preset)
         self.apply_action = QAction(
-            FluentIcon.PLAY.icon(), og.app.tr("应用方案"), self.preset_command_bar
+            FluentIcon.PLAY.icon(), self.tr("应用方案"), self.preset_command_bar
         )
         self.apply_action.triggered.connect(self.on_apply_preset)
 
@@ -664,9 +665,9 @@ class TeamManagerTab(CustomTab):
         top_layout.setContentsMargins(16, 12, 16, 12)
         top_layout.setSpacing(10)
 
-        top_layout.addWidget(StrongBodyLabel(og.app.tr("名称"), self.preset_top_card))
+        top_layout.addWidget(StrongBodyLabel(self.tr("名称"), self.preset_top_card))
         self.preset_name_edit = LineEdit(self.preset_top_card)
-        self.preset_name_edit.setPlaceholderText(og.app.tr("名称"))
+        self.preset_name_edit.setPlaceholderText(self.tr("名称"))
         self.preset_name_edit.setMinimumWidth(220)
         self.preset_name_edit.setMaximumWidth(360)
         self.preset_name_edit.editingFinished.connect(self.on_preset_name_changed)
@@ -747,6 +748,11 @@ class TeamManagerTab(CustomTab):
             parent=self.window(),
         )
 
+    def _get_task(self) -> DebugCharTask | None:
+        if self.task is None and self.executor is not None:
+            self.task = self.get_task(DebugCharTask)
+        return self.task
+
     def _current_preset(self) -> dict | None:
         return next(
             (
@@ -815,7 +821,7 @@ class TeamManagerTab(CustomTab):
         self.render_current_preset()
 
     def on_create_preset(self) -> None:
-        preset = self.manager.create_team_preset(og.app.tr("新建方案"))
+        preset = self.manager.create_team_preset(self.tr("新建方案"))
         self.reload_presets(preset["id"])
         self.preset_name_edit.setFocus()
         self.preset_name_edit.selectAll()
@@ -828,7 +834,7 @@ class TeamManagerTab(CustomTab):
         if not preset or name == preset["name"]:
             return
         if not self.manager.update_team_preset(self.current_preset_id, name=name):
-            self._show_bar(og.app.tr("无法保存"), self.tr_preset_save_failed, success=False)
+            self._show_bar(self.tr("无法保存"), self.tr_preset_save_failed, success=False)
             self.render_current_preset()
             return
         self.reload_presets(self.current_preset_id)
@@ -843,7 +849,7 @@ class TeamManagerTab(CustomTab):
         if self._loading_preset or not self.current_preset_id:
             return
         if not self.manager.update_team_preset(self.current_preset_id, slots=self._current_slots()):
-            self._show_bar(og.app.tr("无法保存"), self.tr_duplicate_character, success=False)
+            self._show_bar(self.tr("无法保存"), self.tr_duplicate_character, success=False)
             self.render_current_preset()
 
     def on_add_character(self) -> None:
@@ -858,7 +864,7 @@ class TeamManagerTab(CustomTab):
         if deleted_id and self.manager.delete_team_preset(deleted_id):
             self.current_preset_id = None
             self.reload_presets()
-            self._show_bar(og.app.tr("已删除"), self.tr_deleted_success)
+            self._show_bar(self.tr("已删除"), self.tr_deleted_success)
 
     def on_apply_preset(self) -> None:
         if not self.current_preset_id:
@@ -867,7 +873,7 @@ class TeamManagerTab(CustomTab):
         if applied is None:
             return
         self.reload_preset_options()
-        self._show_bar(og.app.tr("已应用"), self.tr_apply_success.format(len(applied)))
+        self._show_bar(self.tr("已应用"), self.tr_apply_success.format(len(applied)))
 
     def on_toggle_fixed_preset(self) -> None:
         preset = self._current_preset()
@@ -882,22 +888,36 @@ class TeamManagerTab(CustomTab):
             return
         self.reload_preset_options()
         self.reload_presets(preset["id"])
-        self._show_bar(og.app.tr("已应用"), self.tr_apply_success.format(len(applied)))
+        self._show_bar(self.tr("已应用"), self.tr_apply_success.format(len(applied)))
 
     def on_scan_clicked(self) -> None:
+        task = self._get_task()
+        if task is None:
+            self._show_bar(self.tr("扫描失败"), self.tr_scan_task_missing, success=False)
+            return
         self.scan_btn.setEnabled(False)
         self.scan_btn.setText(self.tr_scanning)
         for card in self.slots:
             card.btn_act.hide()
             card.show_empty()
-        communicate.team_scan_requested.emit(TeamScanRequested())
+        self._scan_pending = True
+        task.scan_team()
+        og.app.start_controller.start(task)
 
-    def on_scan_done(self, event: TeamScanCompleted) -> None:
-        self.last_scan_results = list(event.results)
+    def _on_framework_task_changed(self, task) -> None:
+        if task is not self._get_task() or not self._scan_pending:
+            return
+        if task.running or task.mode is not None:
+            return
+        self._scan_pending = False
+        self.on_scan_done(task.scan_results, task.result_error)
+
+    def on_scan_done(self, results: tuple[TeamScanResult, ...], error: str = "") -> None:
+        self.last_scan_results = list(results)
         self.scan_btn.setEnabled(True)
         self.scan_btn.setText(self.tr_scan_btn)
-        if event.error:
-            self._show_bar(og.app.tr("扫描失败"), event.error, success=False)
+        if error:
+            self._show_bar(self.tr("扫描失败"), error, success=False)
             return
         updated_indices = set()
         for result in self.last_scan_results:
@@ -932,18 +952,18 @@ class TeamManagerTab(CustomTab):
                 slots[index] = {"char_id": char_id, "impl_id": char_info["impl_id"]}
                 filled_count += 1
         if not filled_count:
-            self._show_bar(og.app.tr("无法填入"), self.tr_fill_failed, success=False)
+            self._show_bar(self.tr("无法填入"), self.tr_fill_failed, success=False)
             return
         if not self.manager.update_team_preset(preset["id"], slots=slots):
-            self._show_bar(og.app.tr("无法保存"), self.tr_duplicate_character, success=False)
+            self._show_bar(self.tr("无法保存"), self.tr_duplicate_character, success=False)
             return
         self.render_current_preset()
-        self._show_bar(og.app.tr("已填入"), og.app.tr("{} 个空槽位").format(filled_count))
+        self._show_bar(self.tr("已填入"), self.tr("{} 个空槽位").format(filled_count))
 
     def show_scan_flyout(self) -> None:
         Flyout.create(
             icon=InfoBarIcon.INFORMATION,
-            title=og.app.tr("提示"),
+            title=self.tr("提示"),
             content=self.tr_scan_tips,
             target=self.scan_info_btn,
             parent=self,
@@ -953,7 +973,7 @@ class TeamManagerTab(CustomTab):
     def show_preset_flyout(self) -> None:
         Flyout.create(
             icon=InfoBarIcon.INFORMATION,
-            title=og.app.tr("提示"),
+            title=self.tr("提示"),
             content=self.tr_preset_tips,
             target=self.preset_info_btn,
             parent=self,

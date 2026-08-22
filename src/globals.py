@@ -3,8 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 
 from ok import Logger
-from ok.core.events import communicate
 
+from src.events import communicate
 from src.runtime.services import RuntimeServices
 
 logger = Logger.get_logger(__name__)
@@ -25,9 +25,11 @@ class Globals:
         self._runtime_services.start()
 
     def on_show_main_window(self, main_window) -> None:
-        from src.ui.foundation.interactions import install_interaction_handler
+        from src.ui.foundation.dialogs import install_confirmation_handler
+        from src.ui.foundation.overlay import install_overlay_window
 
-        install_interaction_handler(main_window)
+        main_window._confirmation_handler = install_confirmation_handler(main_window)
+        install_overlay_window(main_window)
 
     def stop(self):
         self._runtime_services.stop()

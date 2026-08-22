@@ -2,15 +2,8 @@ import re
 
 import cv2
 import numpy as np
-from ok import CannotFindException, TaskDisabledException, og
+from ok import CannotFindException, TaskDisabledException
 
-from src.events import (
-    GiftCaptureCompleted,
-    GiftCaptureRequested,
-    GiftRunRequested,
-    GiftRunState,
-    communicate,
-)
 from src.gifts.GiftManager import GiftManager
 from src.gifts.layout import GIFT_LAYOUT
 from src.Labels import Labels
@@ -46,44 +39,37 @@ class GiftTask(NTEOneTimeTask, BaseNTETask):
     SEND_BUTTON = GIFT_LAYOUT.send_button
     COUNTER_BOX = GIFT_LAYOUT.counter_box
     COUNTER_RE = re.compile(r"(\d+)\s*/\s*3")
+    MODE_CAPTURE = "capture"
+    MODE_RUN = "run"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = "羁遇赠礼"
         self.visible = False
         self.manager = GiftManager()
-        communicate.gift_capture_requested.connect(self._request_capture)
-        communicate.gift_run_requested.connect(self._request_run)
+        self.mode: str | None = None
+        self.capture_profile_id: str | None = None
+        self.capture_frame = None
+        self.capture_name = ""
+        self.capture_blocked_slots: tuple[int, ...] = ()
+        self.capture_error = ""
 
-    def _request_capture(self, request: GiftCaptureRequested) -> None:
-        og.app.start_controller.handler.post(lambda: self._capture_profile(request))
+    def capture_profile(self, profile_id: str | None) -> None:
+        self.mode = self.MODE_CAPTURE
+        self.capture_profile_id = profile_id
+        self.capture_frame = None
+        self.capture_name = ""
+        self.capture_blocked_slots = ()
+        self.capture_error = ""
 
-    def _request_run(self, request: GiftRunRequested) -> None:
-        if request.start:
-            og.app.start_controller.start(self)
-        else:
-            self._stop()
+    def run_gift_mode(self) -> None:
+        self.mode = self.MODE_RUN
 
-    def _stop(self) -> None:
-        if getattr(self.executor, "current_task", None) is self:
-            self.executor.stop_current_task()
-        else:
-            self.disable()
-            self.unpause()
-
-    def _capture_profile(self, request: GiftCaptureRequested) -> None:
-        error = self.prepare_game_capture()
-        if error:
-            communicate.gift_capture_completed.emit(
-                GiftCaptureCompleted(request.profile_id, None, error=error)
-            )
-            return
+    def _capture_profile(self) -> None:
 
         frame = self.frame
         if frame is None or not getattr(frame, "size", 0):
-            communicate.gift_capture_completed.emit(
-                GiftCaptureCompleted(request.profile_id, None, error=self.tr("没有可用的游戏画面"))
-            )
+            self.capture_error = self.tr("没有可用的游戏画面")
             return
 
         name = self.tr("未命名角色")
@@ -104,25 +90,34 @@ class GiftTask(NTEOneTimeTask, BaseNTETask):
             ]
         except Exception as error:
             self.log_debug(f"gift capture unlimited-gift detection failed: {type(error).__name__}")
-        communicate.gift_capture_completed.emit(
-            GiftCaptureCompleted(request.profile_id, frame, name, tuple(blocked_slots))
-        )
+        self.capture_frame = frame
+        self.capture_name = name
+        self.capture_blocked_slots = tuple(blocked_slots)
 
     def _report(self, message: str) -> None:
         self.log_info(message)
 
     def run(self):
-        super().run()
+        mode = self.mode or self.MODE_RUN
         try:
-            self.do_run()
+            super().run()
+            if mode == self.MODE_CAPTURE:
+                self._capture_profile()
+            else:
+                self.do_run()
         except TaskDisabledException:
+            if mode == self.MODE_CAPTURE:
+                self.capture_error = self.tr("任务已停止")
             raise
         except Exception as e:
-            self.screenshot("gift_task_failure")
-            self.log_error("GiftTask error", e)
+            if mode == self.MODE_CAPTURE:
+                self.capture_error = str(e).strip() or e.__class__.__name__
+            else:
+                self.screenshot("gift_task_failure")
+                self.log_error("GiftTask error", e)
             raise
         finally:
-            communicate.gift_run_state.emit(GiftRunState(False))
+            self.mode = None
 
     def do_run(self) -> bool:
         summary = self.run_gifts()

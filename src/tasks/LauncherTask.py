@@ -7,10 +7,10 @@ import win32con
 import win32gui
 import win32process
 from ok import TaskDisabledException, og
-from ok.core.events import communicate
 from ok.util.process import execute, is_admin
 
 from src import GAME_EXE, LAUNCHER_EXE
+from src.events import communicate
 from src.interaction.NTEInteraction import NTEInteraction
 from src.Labels import Labels
 from src.tasks.BaseNTETask import BaseNTETask

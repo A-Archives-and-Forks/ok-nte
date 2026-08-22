@@ -72,19 +72,6 @@ class BaseNTETask(
             {self.CONF_CLAIM_REWARD_COUNT: "设置为0则领取当前体力可领取的全部奖励"}
         )
 
-    def prepare_game_capture(self) -> str:
-        """Start or refresh the game capture before an interactive task action."""
-        try:
-            executor = og.executor
-            if getattr(executor, "thread", None) is None or getattr(executor, "paused", False):
-                if not og.app.start_controller.do_start():
-                    return self.tr("启动失败")
-                return ""
-            og.device_manager.do_refresh(True)
-            return og.app.start_controller.check_device_error() or ""
-        except Exception as error:
-            return str(error).strip() or error.__class__.__name__
-
     @property
     def thread_pool_executor(self) -> ThreadPoolExecutor | None:
         if og.my_app is None:

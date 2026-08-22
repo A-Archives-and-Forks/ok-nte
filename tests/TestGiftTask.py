@@ -9,6 +9,26 @@ from src.tasks.daily.GiftTask import GiftTask
 
 
 class TestGiftTask(unittest.TestCase):
+    def test_ui_commands_prepare_the_task_mode_and_capture_state(self):
+        task = object.__new__(GiftTask)
+        task.capture_frame = object()
+        task.capture_name = "stale"
+        task.capture_blocked_slots = (1,)
+        task.capture_error = "stale"
+
+        GiftTask.capture_profile(task, "profile-1")
+
+        self.assertEqual(task.mode, GiftTask.MODE_CAPTURE)
+        self.assertEqual(task.capture_profile_id, "profile-1")
+        self.assertIsNone(task.capture_frame)
+        self.assertEqual(task.capture_name, "")
+        self.assertEqual(task.capture_blocked_slots, ())
+        self.assertEqual(task.capture_error, "")
+
+        GiftTask.run_gift_mode(task)
+
+        self.assertEqual(task.mode, GiftTask.MODE_RUN)
+
     def test_layout_boxes_are_derived_from_full_frame_size(self):
         task = object.__new__(GiftTask)
         task._executor = SimpleNamespace(frame=np.zeros((100, 200, 3), dtype=np.uint8))

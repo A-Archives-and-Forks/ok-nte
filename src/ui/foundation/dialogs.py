@@ -7,6 +7,8 @@ from ok import Logger
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, Signal, Slot
 from PySide6.QtWidgets import QApplication, QWidget
 
+from src.events import ConfirmationRequested, communicate
+
 logger = Logger.get_logger(__name__)
 
 _dialog_dispatcher = None
@@ -197,3 +199,27 @@ def show_dialog_and_wait(
     )
     event.wait()
     return result[0] if result else None
+
+
+def install_confirmation_handler(parent: QWidget):
+    """Bind project confirmation events to dialogs owned by the main window."""
+
+    def handle_confirmation(request: ConfirmationRequested) -> None:
+        try:
+            accepted = bool(
+                show_dialog_and_wait(
+                    request.title,
+                    request.content,
+                    parent=parent,
+                    copyable=request.copyable,
+                    rich_text=request.rich_text,
+                    hide_cancel=request.hide_cancel,
+                    close_delay_seconds=request.close_delay_seconds or 0,
+                )
+            )
+        except Exception:
+            accepted = False
+        request.resolve(accepted)
+
+    communicate.confirmation_requested.connect(handle_confirmation)
+    return handle_confirmation

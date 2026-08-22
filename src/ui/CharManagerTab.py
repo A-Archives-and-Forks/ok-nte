@@ -42,7 +42,8 @@ from qfluentwidgets import (
 
 from src.char.core.CharRegistry import char_registry
 from src.char.custom.CustomCharManager import EXTERNAL_CHARS_DIR, CustomCharManager
-from src.events import ComboTestRequested, communicate
+from src.events import communicate
+from src.tasks.DebugCharTask import DebugCharTask
 from src.ui.features.characters.safety_dialog import confirm_external_code_import
 from src.ui.foundation.images import cv_to_pixmap
 from src.ui.foundation.widgets.cards import BorderCardWidget
@@ -121,6 +122,8 @@ class CharManagerTab(CustomTab):
 
         self.icon = FluentIcon.PEOPLE
         self.manager = CustomCharManager()
+        self.task: DebugCharTask | None = None
+        self._combo_test_pending = False
         self._doc_cache_by_locale = {}
         self._doc_cache = None
         self._pending_command = ""
@@ -129,6 +132,7 @@ class CharManagerTab(CustomTab):
         self.doc_translation_ready.connect(
             self._on_doc_translation_ready, Qt.ConnectionType.QueuedConnection
         )
+        communicate.task.connect(self._on_framework_task_changed)
 
         self._filter_timer = QTimer()
         self._filter_timer.setSingleShot(True)  # 设置为单次触发
@@ -310,7 +314,7 @@ class CharManagerTab(CustomTab):
         return super().eventFilter(watched, event)
 
     @property
-    def name(self): # type: ignore
+    def name(self):  # type: ignore
         return self.tr_name
 
     @property
@@ -320,6 +324,19 @@ class CharManagerTab(CustomTab):
     @executor.setter
     def executor(self, value):
         self._executor = value
+
+    def _get_task(self) -> DebugCharTask | None:
+        if self.task is None and self.executor is not None:
+            self.task = self.get_task(DebugCharTask)
+        return self.task
+
+    def _on_framework_task_changed(self, task) -> None:
+        if task is not self._get_task() or not self._combo_test_pending:
+            return
+        if task.running or task.mode is not None:
+            return
+        self._combo_test_pending = False
+        self.on_combo_changed(self.combo_select.currentText())
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -629,13 +646,26 @@ class CharManagerTab(CustomTab):
                     parent=self.window(),
                 )
                 return
-        communicate.combo_test_requested.emit(
-            ComboTestRequested(
-                self.current_char_id,
-                self._resolve_combo_id(combo_input),
-                self.combo_text.toPlainText().strip(),
+        task = self._get_task()
+        if task is None:
+            InfoBar.error(
+                title=self.tr_combo_invalid_title,
+                content=self.tr("角色工具任务未注册"),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3500,
+                parent=self.window(),
             )
+            return
+        self._combo_test_pending = True
+        self.combo_test_btn.setEnabled(False)
+        task.test_combo(
+            self.current_char_id,
+            self._resolve_combo_id(combo_input),
+            self.combo_text.toPlainText().strip(),
         )
+        og.app.start_controller.start(task)
 
     def on_save_combo(self):
         combo_input = self.combo_select.currentText().strip()

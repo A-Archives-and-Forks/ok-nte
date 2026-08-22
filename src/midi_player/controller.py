@@ -322,7 +322,7 @@ class MidiPlaybackController:
     @staticmethod
     def _prepare_capture(og) -> None:
         executor = og.executor
-        if getattr(executor, "thread", None) is None or getattr(executor, "paused", False):
+        if executor.paused:
             if not og.app.start_controller.do_start():
                 raise RuntimeError(og.app.tr("启动失败"))
             return

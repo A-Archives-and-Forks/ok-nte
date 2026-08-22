@@ -263,17 +263,16 @@ class DailyRoutineTab(CustomTab):
     @executor.setter
     def executor(self, value):
         self._executor = value
+        self.task = self.get_task(DailyRoutineTask) if value is not None else None
         if value is not None and getattr(self, "_rendered", False) is False:
             self._render_routine()
 
     @property
-    def name(self): # type: ignore
+    def name(self):  # type: ignore
         return self.tr_name
 
     def _routine_task(self):
-        if self.executor is None:
-            return None
-        return self.get_task(DailyRoutineTask)
+        return self.task
 
     def daily_task_card_context(self, task_id, task):
         routine_task = self._routine_task()

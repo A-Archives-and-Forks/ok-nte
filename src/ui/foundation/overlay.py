@@ -11,6 +11,7 @@ from src.events import (
     OverlayCleared,
     OverlayShown,
     RecordingOverlayContent,
+    communicate,
 )
 
 
@@ -174,3 +175,15 @@ class OverlayWindow(QWidget):
             Qt.TextFlag.TextWordWrap,
             content.instruction,
         )
+
+
+def install_overlay_window(parent=None) -> OverlayWindow:
+    """Create and bind the application overlay owned by the main window."""
+
+    overlay_window = OverlayWindow(parent)
+    communicate.overlay_shown.connect(overlay_window.show_overlay)
+    communicate.overlay_cleared.connect(overlay_window.clear_overlay)
+    communicate.window.connect(overlay_window.update_capture_geometry)
+    if parent is not None:
+        parent._overlay_window = overlay_window
+    return overlay_window

@@ -12,8 +12,7 @@ from src.char.custom.CustomChar import CustomChar
 from src.char.custom.CustomCharDb import CustomCharDb
 from src.char.custom.CustomCharManager import CustomCharManager
 from src.config import config
-from src.events import TeamScanCompleted, TeamScanResult, communicate
-from src.tasks.trigger.AutoCombatTask import AutoCombatTask
+from src.tasks.DebugCharTask import DebugCharTask, TeamScanResult
 from src.ui.CharManagerTab import CharManagerTab
 from src.ui.TeamManagerTab import AddCharacterDialog, TeamManagerTab
 
@@ -21,7 +20,7 @@ PREDEFINED_CHARACTER_ID = "builtin:zero"
 
 
 class TestCustomChar(TaskTestCase):
-    task_class = AutoCombatTask
+    task_class = DebugCharTask
     config = config
 
     @staticmethod
@@ -42,21 +41,31 @@ class TestCustomChar(TaskTestCase):
 
     def test_scan_team(self):
         self.set_image("tests/images/02.png")
-        mock_handler = MagicMock()
-        with (
-            patch.object(self.task, "prepare_game_capture", return_value=""),
-            communicate.team_scan_completed.subscribed(mock_handler),
-        ):
-            self.task._scan_team()
+        self.task.scan_team()
+        self.task._scan_team()
 
-        mock_handler.assert_called_once()
-        event = mock_handler.call_args.args[0]
-        self.assertIsInstance(event, TeamScanCompleted)
-        self.assertEqual(event.error, "")
-        self.assertEqual(len(event.results), 4)
-        self.assertIsInstance(event.results[0], TeamScanResult)
-        self.assertGreater(event.results[0].width, 0)
-        self.assertGreater(event.results[0].height, 0)
+        self.assertEqual(self.task.result_error, "")
+        self.assertEqual(len(self.task.scan_results), 4)
+        self.assertIsInstance(self.task.scan_results[0], TeamScanResult)
+        self.assertGreater(self.task.scan_results[0].width, 0)
+        self.assertGreater(self.task.scan_results[0].height, 0)
+
+    def test_character_tool_modes_keep_ui_input_on_the_task(self):
+        self.task.scan_results = (object(),)
+        self.task.result_error = "stale"
+
+        self.task.scan_team()
+
+        self.assertEqual(self.task.mode, DebugCharTask.MODE_SCAN_TEAM)
+        self.assertEqual(self.task.scan_results, ())
+        self.assertEqual(self.task.result_error, "")
+
+        self.task.test_combo("custom:test", "combo:test", "skill")
+
+        self.assertEqual(self.task.mode, DebugCharTask.MODE_TEST_COMBO)
+        self.assertEqual(self.task._combo_character_id, "custom:test")
+        self.assertEqual(self.task._combo_implementation_id, "combo:test")
+        self.assertEqual(self.task._combo_text, "skill")
 
     def setUp(self):
         super().setUp()
@@ -256,12 +265,10 @@ class TestCustomChar(TaskTestCase):
 
         # 模擬 on_scan_done 發送了掃描成功結果
         fake_mat = np.zeros((10, 10, 3), dtype=np.uint8)
-        mock_results = TeamScanCompleted(
-            (
-                TeamScanResult(0, fake_mat, 1920, 1080, scan_char_id, 1.0),
-                # index 1 掃描到但未匹配角色字串
-                TeamScanResult(1, fake_mat, 1920, 1080, "", None),
-            )
+        mock_results = (
+            TeamScanResult(0, fake_mat, 1920, 1080, scan_char_id, 1.0),
+            # index 1 掃描到但未匹配角色字串
+            TeamScanResult(1, fake_mat, 1920, 1080, "", None),
         )
 
         tab.on_scan_done(mock_results)

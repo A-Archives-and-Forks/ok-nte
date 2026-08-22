@@ -11,10 +11,10 @@ from typing import Any
 
 import psutil
 from ok import ConfigOption, og
-from ok.core.events import communicate
 from ok.util.logger import Logger
 
 from src import GAME_EXE
+from src.events import communicate
 
 logger = Logger.get_logger(__name__)
 

@@ -3,12 +3,11 @@ import time
 from ok import Logger, TriggerTask
 
 from src.combat.BaseCombatTask import BaseCombatTask, NotInCombatException
-from src.tasks.mixin.CharacterManagementMixin import CharacterManagementMixin
 
 logger = Logger.get_logger(__name__)
 
 
-class AutoCombatTask(BaseCombatTask, CharacterManagementMixin, TriggerTask):
+class AutoCombatTask(BaseCombatTask, TriggerTask):
     CONF_USE_ULT = "使用终结技"
     CONF_AUTO_TARGET = "自动目标"
 

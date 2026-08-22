@@ -11,13 +11,6 @@ _PROJECT_EVENT_NAMES = (
     "confirmation_requested",
     "overlay_shown",
     "overlay_cleared",
-    "team_scan_requested",
-    "team_scan_completed",
-    "combo_test_requested",
-    "gift_capture_requested",
-    "gift_capture_completed",
-    "gift_run_requested",
-    "gift_run_state",
 )
 
 
@@ -64,58 +57,6 @@ class OverlayShown:
 @dataclass(frozen=True)
 class OverlayCleared:
     key: str
-
-
-@dataclass(frozen=True)
-class TeamScanRequested:
-    """Ask the combat task to capture and identify the active team."""
-
-
-@dataclass(frozen=True)
-class TeamScanResult:
-    index: int
-    image: Any
-    width: int
-    height: int
-    character_id: str
-    confidence: float | None
-
-
-@dataclass(frozen=True)
-class TeamScanCompleted:
-    results: tuple[TeamScanResult, ...]
-    error: str = ""
-
-
-@dataclass(frozen=True)
-class ComboTestRequested:
-    character_id: str
-    implementation_id: str
-    combo_text: str
-
-
-@dataclass(frozen=True)
-class GiftCaptureRequested:
-    profile_id: str | None
-
-
-@dataclass(frozen=True)
-class GiftCaptureCompleted:
-    profile_id: str | None
-    frame: Any | None
-    recognized_name: str = ""
-    blocked_slots: tuple[int, ...] = ()
-    error: str = ""
-
-
-@dataclass(frozen=True)
-class GiftRunRequested:
-    start: bool
-
-
-@dataclass(frozen=True)
-class GiftRunState:
-    active: bool
 
 
 @dataclass
