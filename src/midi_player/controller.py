@@ -311,7 +311,7 @@ class MidiPlaybackController:
         og = self.og_provider() if callable(self.og_provider) else self.og_provider
         if og is None:
             try:
-                from src.globals import og as global_og
+                from ok import og as global_og
             except ImportError as exc:
                 raise RuntimeError("No og provider is available for MIDI playback") from exc
             og = global_og

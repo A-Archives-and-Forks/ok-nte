@@ -1,9 +1,11 @@
 import threading
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 
-from ok import Logger, get_path_relative_to_exe, og
+from ok import Logger
 from ok.core.events import communicate
+
+from src.runtime.services import RuntimeServices
 
 logger = Logger.get_logger(__name__)
 
@@ -15,38 +17,12 @@ class Globals:
         self.thread_pool_exit_event = Event()
         self._periodic_tasks = {}
         self._periodic_tasks_lock = threading.Lock()
+        self._runtime_services = RuntimeServices()
         exit_event.bind_stop(self)
-        self._openvino_model_async = None
-        self._openvino_model_future = Future()
-        self._sound_context_stop_event = Event()
-        self._runtime_services_started = False
-        self._runtime_services_lock = threading.Lock()
         communicate.start_success.connect(self._start_runtime_services)
-        if self._should_start_runtime_services_immediately():
-            self._start_runtime_services()
-
-    @staticmethod
-    def _should_start_runtime_services_immediately():
-        ok_instance = getattr(og, "ok", None)
-        if ok_instance is None:
-            return True
-        ui_config = ok_instance.config.get("gui") or {}
-        return bool(ok_instance.args.get("headless", False)) or ui_config.get("type") not in {
-            "qt",
-            "web",
-        }
 
     def _start_runtime_services(self, *_):
-        with self._runtime_services_lock:
-            if self._runtime_services_started or self._sound_context_stop_event.is_set():
-                return
-            self._runtime_services_started = True
-        threading.Thread(
-            target=self.init_sound_context,
-            daemon=True,
-            name="SoundContextInit",
-        ).start()
-        threading.Thread(target=self.init_openvino, daemon=True, name="OpenVINOInit").start()
+        self._runtime_services.start()
 
     def on_show_main_window(self, main_window) -> None:
         from src.ui.foundation.interactions import install_interaction_handler
@@ -54,10 +30,7 @@ class Globals:
         install_interaction_handler(main_window)
 
     def stop(self):
-        self._sound_context_stop_event.set()
-        from src.sound_trigger.SoundCombatContext import SoundCombatContext
-
-        SoundCombatContext().shutdown()
+        self._runtime_services.stop()
         self.shutdown_thread_pool_executor()
 
     def get_thread_pool_executor(self, max_workers=6):
@@ -188,86 +161,39 @@ class Globals:
 
     @property
     def openvino_model_async(self):
-        if self._openvino_model_async is not None:
-            return self._openvino_model_async
-        return self._openvino_model_future.result()
+        return self._runtime_services.openvino_model_async
 
     @property
     def openvino_latency_async(self):
-        return self._openvino_model_async.latency
+        return self._runtime_services.openvino_latency_async
 
     @property
     def openvino_latest_image(self):
-        return self._openvino_model_async.latest_image if self._openvino_model_async else None
+        return self._runtime_services.openvino_latest_image
 
     def openvino_detect(
         self, image, sync=False, box=None, threshold=0.5, force=False, mask_regions=None
     ):
-        """异步检测，返回结果可能为缓存值"""
-        if not sync:
-            ret = self.openvino_model_async.detect(
-                image,
-                box=box,
-                threshold=threshold,
-                label="target",
-                force=force,
-                mask_regions=mask_regions,
-            )
-        else:
-            ret = self.openvino_model_async.detect_sync(
-                image,
-                box=box,
-                threshold=threshold,
-                label="target",
-                mask_regions=mask_regions,
-            )
-        # latency = self.openvino_latency_async if ret is not None else -1
-        # logger.debug(
-        #     f"openvino: sync {sync}, result {ret}, cost {latency:.3f}s"
-        # )
-        return ret
+        return self._runtime_services.openvino_detect(
+            image,
+            sync=sync,
+            box=box,
+            threshold=threshold,
+            force=force,
+            mask_regions=mask_regions,
+        )
 
     def openvino_clear_cache(self):
-        """清空缓存"""
-        self.openvino_model_async.clear_cache()
+        self._runtime_services.openvino_clear_cache()
+
+    @property
+    def _openvino_model_async(self):
+        return self._runtime_services._openvino_model_async
+
+    @_openvino_model_async.setter
+    def _openvino_model_async(self, detector) -> None:
+        self._runtime_services._openvino_model_async = detector
 
     @property
     def openvino_available(self):
-        """openvino是否可用"""
-        return self.openvino_model_async._openvino_available
-
-    def init_sound_context(self):
-        from src.sound_trigger.SoundCombatContext import SoundCombatContext
-
-        context = SoundCombatContext()
-        if self._sound_context_stop_event.is_set():
-            return
-        dodge = get_path_relative_to_exe("assets", "sounds", "dodge.wav")
-        counter_attack = get_path_relative_to_exe("assets", "sounds", "counter.wav")
-        context.setup(
-            task=None,
-            sample_path=dodge,
-            counter_attack_sample_path=counter_attack,
-        )
-        if self._sound_context_stop_event.is_set():
-            context.shutdown()
-            return
-        if context.enter() and not self._sound_context_stop_event.is_set():
-            logger.info("SoundCombatContext initialized globally")
-        else:
-            context.shutdown()
-
-    def init_openvino(self):
-        try:
-            logger.info("openvino_model_async Using YOLO26OpenVINOAsyncDetector")
-            from src.YOLO26OpenVINOAsyncDetector import YOLO26OpenVINOAsyncDetector
-
-            detector = YOLO26OpenVINOAsyncDetector(
-                xml_path=get_path_relative_to_exe("assets", "openvino", "best.xml")
-            )
-        except BaseException as error:
-            logger.error(f"OpenVINO detector initialization failed: {error}")
-            self._openvino_model_future.set_exception(error)
-        else:
-            self._openvino_model_async = detector
-            self._openvino_model_future.set_result(detector)
+        return self._runtime_services.openvino_available
