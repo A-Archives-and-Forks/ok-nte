@@ -1291,3 +1291,6 @@ msgstr "<p><b style=\"color: #d83b01;\">Note:</b> This panel <b style=\"color: #
 
 msgid "<p>用于配置并保存常用的 4 人队伍阵容与出招表, 修改后立即生效。<br>点击 <b style=\"color: #0078d7;\">{apply_preset}</b> 可一键更新应用方案中各角色的出招表 (未选择出招表则保持原配置不变)。<br>开启 <b style=\"color: #0078d7;\">{fixed_preset}</b> 后自动战斗将直接采用此阵容, 无需等待特征识别 (未录入特征的角色亦可直接战斗)。<br>点击 <b style=\"color: #0078d7;\">{fill_scan}</b> 可将上方特征扫描识别出的队伍角色快速填入当前方案。</p>"
 msgstr "<p>Configure and save common 4-character team lineups and combos, effective immediately upon modification.<br>Click <b style=\"color: #0078d7;\">{apply_preset}</b> to update and apply each character's combo in this preset (unselected slots keep original configuration).<br>Enable <b style=\"color: #0078d7;\">{fixed_preset}</b> to directly use this preset lineup in auto combat without waiting for feature recognition (characters without registered features can combat directly).<br>Click <b style=\"color: #0078d7;\">{fill_scan}</b> to quickly fill in the characters recognized from the feature scan above into the current preset.</p>"
+
+msgid "OpenVINO 单次推理超时，已自动关闭目标检测；重启程序后会重新尝试启用。"
+msgstr "OpenVINO single inference timed out, target detection has been automatically disabled. It will be re-enabled upon restarting the program."

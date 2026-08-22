@@ -1291,3 +1291,6 @@ msgstr "<p><b style=\"color: #d83b01;\">Nota:</b> Este panel <b style=\"color: #
 
 msgid "<p>用于配置并保存常用的 4 人队伍阵容与出招表, 修改后立即生效。<br>点击 <b style=\"color: #0078d7;\">{apply_preset}</b> 可一键更新应用方案中各角色的出招表 (未选择出招表则保持原配置不变)。<br>开启 <b style=\"color: #0078d7;\">{fixed_preset}</b> 后自动战斗将直接采用此阵容, 无需等待特征识别 (未录入特征的角色亦可直接战斗)。<br>点击 <b style=\"color: #0078d7;\">{fill_scan}</b> 可将上方特征扫描识别出的队伍角色快速填入当前方案。</p>"
 msgstr "<p>Configura y guarda alineaciones y combos de equipo de 4 personajes, con efecto inmediato tras su modificación.<br>Haz clic en <b style=\"color: #0078d7;\">{apply_preset}</b> para aplicar los combos de cada personaje en este ajuste (los espacios sin combo seleccionado mantendrán la configuración original).<br>Activa <b style=\"color: #0078d7;\">{fixed_preset}</b> para que el combate automático adopte directamente este equipo sin esperar al reconocimiento de características (los personajes sin características registradas pueden combatir directamente).<br>Haz clic en <b style=\"color: #0078d7;\">{fill_scan}</b> para rellenar rápidamente en el ajuste actual los personajes reconocidos en el escaneo superior.</p>"
+
+msgid "OpenVINO 单次推理超时，已自动关闭目标检测；重启程序后会重新尝试启用。"
+msgstr "Se agotó el tiempo de inferencia única de OpenVINO, la detección de objetivos se ha desactivado automáticamente. Se intentará volver a activar al reiniciar el programa."
