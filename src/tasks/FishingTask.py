@@ -9,7 +9,7 @@ from qfluentwidgets import FluentIcon
 
 from src import text_white_color
 from src.Labels import Labels
-from src.scene_flow import SceneReplan, StepFailure, StepPolicy
+from src.tasks.flow.scene_flow import SceneReplan, StepFailure, StepPolicy
 from src.tasks.BaseNTETask import BaseNTETask
 from src.tasks.NTEOneTimeTask import NTEOneTimeTask
 from src.utils import image_utils as iu

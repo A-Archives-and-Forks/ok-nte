@@ -5,7 +5,7 @@ import os
 from ok import Box, ConfigOption
 
 from src import GAME_EXE
-from src.audio_routing import create_background_audio_routing_config_option
+from src.audio.routing import create_background_audio_routing_config_option
 from src.interaction.NTEInteraction import NTEInteraction
 from src.process_feature import process_feature
 

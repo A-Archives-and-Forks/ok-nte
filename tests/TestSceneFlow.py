@@ -3,7 +3,7 @@ from enum import Enum, auto
 
 from ok import TaskDisabledException, WaitFailedException
 
-from src.scene_flow import SceneFlow, StepPolicy
+from src.tasks.flow.scene_flow import SceneFlow, StepPolicy
 
 
 class Step(Enum):

@@ -5,7 +5,7 @@ from ok import Logger, TaskDisabledException, get_path_relative_to_exe, og
 
 from src.combat.CombatCheck import CombatCheck
 from src.tasks.NTEOneTimeTask import NTEOneTimeTask
-from src.YOLO26OpenVINOAsyncDetector import YOLO26OpenVINOAsyncDetector
+from src.vision.openvino_detector import YOLO26OpenVINOAsyncDetector
 
 logger = Logger.get_logger(__name__)
 

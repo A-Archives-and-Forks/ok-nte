@@ -109,7 +109,7 @@ class RuntimeServices:
             return
         try:
             logger.info("openvino_model_async Using YOLO26OpenVINOAsyncDetector")
-            from src.YOLO26OpenVINOAsyncDetector import YOLO26OpenVINOAsyncDetector
+            from src.vision.openvino_detector import YOLO26OpenVINOAsyncDetector
 
             detector = YOLO26OpenVINOAsyncDetector(
                 xml_path=get_path_relative_to_exe("assets", "openvino", "best.xml")

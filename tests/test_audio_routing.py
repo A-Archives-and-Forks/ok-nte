@@ -5,8 +5,9 @@ from unittest.mock import patch
 
 from ok.util.handler import ExitEvent
 
-from src import GAME_EXE, audio_routing
-from src.audio_routing import (
+from src import GAME_EXE
+from src.audio import routing as audio_routing
+from src.audio.routing import (
     CONF_ENABLE,
     CONF_SVCL_PATH,
     DEFAULT_RENDER_DEVICE,

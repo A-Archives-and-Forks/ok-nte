@@ -8,7 +8,7 @@ from unittest.mock import patch
 import numpy as np
 
 from ok import Box
-from src.YOLO26OpenVINOAsyncDetector import YOLO26OpenVINOAsyncDetector
+from src.vision.openvino_detector import YOLO26OpenVINOAsyncDetector
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -80,8 +80,8 @@ class TestYOLO26OpenVINOAsyncDetector(unittest.TestCase):
         return detector
 
     @patch.object(YOLO26OpenVINOAsyncDetector, "_supports_avx2", return_value=False)
-    @patch("src.YOLO26OpenVINOAsyncDetector.communicate")
-    @patch("src.YOLO26OpenVINOAsyncDetector.og.app")
+    @patch("src.vision.openvino_detector.communicate")
+    @patch("src.vision.openvino_detector.og.app")
     def test_detector_notifies_and_returns_false_without_avx2(
         self, app, communicate, _supports_avx2
     ):
