@@ -20,18 +20,6 @@ msgstr "Verificar Passe Mensal"
 msgid "Check for monthly card to avoid interruption of tasks"
 msgstr "Verificar passe mensal para evitar interrupção das tarefas"
 
-msgid "F10"
-msgstr "F10"
-
-msgid "F11"
-msgstr "F11"
-
-msgid "F12"
-msgstr "F12"
-
-msgid "F9"
-msgstr "F9"
-
 msgid "Game Hotkey Config"
 msgstr "Configuração de Teclas de Atalho"
 
@@ -192,12 +180,6 @@ msgstr "Sem Imagem"
 msgid "日常任务"
 msgstr "Tarefas Diárias"
 
-msgid "暂不可用"
-msgstr "Temporariamente Indisponível"
-
-msgid "更新"
-msgstr "Atualizar"
-
 msgid "未启用"
 msgstr "Desativado"
 
@@ -215,9 +197,6 @@ msgstr "Este é um script Python e não pode ser modificado aqui.\nPor favor, mo
 
 msgid "没有找到匹配的指令。"
 msgstr "Nenhum comando correspondente encontrado."
-
-msgid "清空"
-msgstr "Limpar"
 
 msgid "点击时将短暂控制物理鼠标"
 msgstr "Controla brevemente o mouse físico ao clicar"
@@ -301,9 +280,6 @@ msgstr "Tamanho da equipe inferior a 2"
 msgid "队伍管理"
 msgstr "Gestão de Equipe"
 
-msgid "使用ESC"
-msgstr "Usar ESC"
-
 msgid "关闭时仅在中键选中敌人且画面识别到 'Lv' 文字时开启战斗"
 msgstr ""
 "Quando desativado, o combate só inicia se um inimigo for selecionado com o "
@@ -352,9 +328,6 @@ msgstr "Esquivar de Todos os Ataques"
 
 msgid "Dodge all attacks without performing counter attacks"
 msgstr "Esquivar de todos os ataques sem realizar contra-ataques"
-
-msgid "不支持从OK启动游戏"
-msgstr "Não é suportado iniciar o jogo pelo OK"
 
 msgid "任务完成后自动切换至下一个项目"
 msgstr ""
@@ -460,9 +433,6 @@ msgstr "Tempo limite por música (s)"
 msgid "异环鼓组音游自动打击与重试"
 msgstr "Jogo Rítmico NTE - Toque Automático e Repetição"
 
-msgid "打歌次数, 0=无限循环"
-msgstr "Número de execuções, 0=Infinito"
-
 msgid "自动音游"
 msgstr "Jogo Rítmico Automático"
 
@@ -537,9 +507,6 @@ msgstr "Caminho do launcher"
 msgid "Start Game"
 msgstr "Iniciar jogo"
 
-msgid "循环次数(0为无限次)"
-msgstr "Número de repetições (0 para ilimitado)"
-
 msgid "清空已记录的操作"
 msgstr "Limpar operações gravadas"
 
@@ -569,9 +536,6 @@ msgstr "※ Você pode digitar diretamente na lista para criar entradas"
 
 msgid "输入或选择角色"
 msgstr "Digite ou selecione um personagem"
-
-msgid "自动战斗任务不可用"
-msgstr "A tarefa de combate automático não está disponível"
 
 msgid "启动失败"
 msgstr "Falha ao iniciar"
@@ -885,9 +849,6 @@ msgstr "[Código externo]"
 msgid "打开外置代码目录"
 msgstr "Abrir pasta de código externo"
 
-msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效.<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>."
-msgstr "Após adicionar ou modificar manualmente o código Python, clique no botão [{refresh}] para aplicar.<br>Para um guia sobre como escrever tabelas de combo de personagens, consulte a <a href='{doc_url}'>documentação</a>."
-
 msgid "日常领取"
 msgstr "Resgate Diário"
 
@@ -1019,3 +980,58 @@ msgstr "Gerenciar"
 
 msgid "批量删除"
 msgstr "Exclusão em Lote"
+
+
+msgid "显示内置"
+msgstr "Mostrar Embutidos"
+
+msgid "复制为外置"
+msgstr "Copiar para Externo"
+
+msgid "复制成功"
+msgstr "Copiado com Sucesso"
+
+msgid "复制失败"
+msgstr "Falha ao Copiar"
+
+msgid "已成功创建外置代码: {}"
+msgstr "Código externo criado com sucesso: {}"
+
+msgid "复制为外置代码"
+msgstr "Copiar como Código Externo"
+
+msgid "目录"
+msgstr "Diretório"
+
+msgid "脚本文件名 (.py)"
+msgstr "Nome do Arquivo de Script (.py)"
+
+msgid "将在 external_chars/ 目录下生成独立的 Python 脚本供您编辑与调试."
+msgstr "Um script Python independente será gerado no diretório external_chars/ para edição e depuração."
+
+msgid "无法读取 Python 脚本."
+msgstr "Não foi possível ler o script Python."
+
+msgid "外置代码应用失败"
+msgstr "Falha ao Aplicar Código Externo"
+
+msgid "已应用外置代码: {}"
+msgstr "Código externo aplicado: {}"
+
+msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 以生效. 关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>."
+msgstr "Depois de adicionar ou modificar o código Python manualmente, clique em [{refresh}] para aplicar. Para obter orientações sobre como criar combos de personagens, consulte a <a href='{doc_url}'>documentação</a>."
+
+msgid "角色"
+msgstr "Personagem"
+
+msgid "指令"
+msgstr "Comando"
+
+msgid "请先应用外置代码更改后再运行测试."
+msgstr "Por favor, aplique as alterações do código externo antes de executar o teste."
+
+msgid "角色工具任务未注册"
+msgstr "A tarefa de ferramentas de personagem não está registrada"
+
+msgid "角色工具任务不可用"
+msgstr "A tarefa de ferramentas de personagem não está disponível"
