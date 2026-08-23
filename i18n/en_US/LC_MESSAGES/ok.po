@@ -198,12 +198,8 @@ msgstr "Feature not obtained"
 msgid "关联特征"
 msgstr "Link Feature"
 
-msgid ""
-"此为 Python 脚本，不可在此修改。\n"
-"请在对应的源文件中直接修改代码。"
-msgstr ""
-"This Python script cannot be modified here.\n"
-"Please modify the code directly in the corresponding source file."
+msgid "此为 Python 脚本, 不可在此修改.\n请在对应的源文件中直接修改代码."
+msgstr "This is a Python script and cannot be modified here.\nPlease modify the code directly in the corresponding source file."
 
 msgid "没有找到匹配的指令。"
 msgstr "No matching commands found."
@@ -265,8 +261,8 @@ msgstr "Skip Story"
 msgid "运行一次测试"
 msgstr "Run a test"
 
-msgid "下拉选择，或直接输入名称以创建新{combo}"
-msgstr "Select from dropdown, or directly enter a name to create a new {combo}"
+msgid "下拉选择, 或直接输入名称以创建新{combo}"
+msgstr "Select from drop-down, or enter a name to create a new {combo}"
 
 msgid "重命名失败"
 msgstr "Rename failed"
@@ -883,7 +879,7 @@ msgstr "Anomaly Furniture"
 msgid "每2小时重新登入"
 msgstr "Re-login every 2 hours"
 
-msgid "除了选择内建存在的<b style=\"color: #0078d7;\">{combo}</b>外，您也可以自己输入名称来建立自己的<b style=\"color: #0078d7;\">{combo}</b>。"
+msgid "除了选择内建存在的<b style=\"color: #0078d7;\">{combo}</b>外,您也可以自己输入名称来建立自己的<b style=\"color: #0078d7;\">{combo}</b>."
 msgstr "In addition to selecting a built-in <b style=\"color: #0078d7;\">{combo}</b>, you can also enter a name to create your own <b style=\"color: #0078d7;\">{combo}</b>."
 
 msgid "九百九十九夜"
@@ -1166,7 +1162,7 @@ msgstr "[External Code]"
 msgid "打开外置代码目录"
 msgstr "Open External Code Folder"
 
-msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>。"
+msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效.<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>."
 msgstr "After manually adding or modifying Python code, click the [{refresh}] button for changes to take effect.<br>For a guide on writing character combo tables, please refer to the <a href='{doc_url}'>documentation</a>."
 
 msgid "日常领取"
@@ -1294,3 +1290,12 @@ msgstr "<p>Configure and save common 4-character team lineups and combos, effect
 
 msgid "OpenVINO 单次推理超时，已自动关闭目标检测；重启程序后会重新尝试启用。"
 msgstr "OpenVINO single inference timed out, target detection has been automatically disabled. It will be re-enabled upon restarting the program."
+
+msgid "管理"
+msgstr "Manage"
+
+msgid "批量删除"
+msgstr "Batch Delete"
+
+msgid "当前未绑定任何{combo}.\n遇到此角色将默认使用基础通用脚本(BaseChar)."
+msgstr "No {combo} is currently bound.\nThis character will use the generic base script (BaseChar) by default when encountered."

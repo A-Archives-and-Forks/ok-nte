@@ -198,9 +198,7 @@ msgstr ""
 msgid "关联特征"
 msgstr ""
 
-msgid ""
-"此为 Python 脚本，不可在此修改。\n"
-"请在对应的源文件中直接修改代码。"
+msgid "此为 Python 脚本, 不可在此修改.\n请在对应的源文件中直接修改代码."
 msgstr ""
 
 msgid "没有找到匹配的指令。"
@@ -263,7 +261,7 @@ msgstr ""
 msgid "运行一次测试"
 msgstr ""
 
-msgid "下拉选择，或直接输入名称以创建新{combo}"
+msgid "下拉选择, 或直接输入名称以创建新{combo}"
 msgstr ""
 
 msgid "重命名失败"
@@ -880,7 +878,7 @@ msgstr ""
 msgid "每2小时重新登入"
 msgstr ""
 
-msgid "除了选择内建存在的<b style=\"color: #0078d7;\">{combo}</b>外，您也可以自己输入名称来建立自己的<b style=\"color: #0078d7;\">{combo}</b>。"
+msgid "除了选择内建存在的<b style=\"color: #0078d7;\">{combo}</b>外,您也可以自己输入名称来建立自己的<b style=\"color: #0078d7;\">{combo}</b>."
 msgstr ""
 
 msgid "九百九十九夜"
@@ -1153,7 +1151,7 @@ msgstr ""
 msgid "打开外置代码目录"
 msgstr ""
 
-msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>。"
+msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效.<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>."
 msgstr ""
 
 msgid "日常领取"
@@ -1280,4 +1278,13 @@ msgid "<p>用于配置并保存常用的 4 人队伍阵容与出招表, 修改�
 msgstr "<p>用于配置并保存常用的 4 人队伍阵容与出招表, 修改后立即生效。<br>点击 <b style=\"color: #0078d7;\">{apply_preset}</b> 可一键更新应用方案中各角色的出招表 (未选择出招表则保持原配置不变)。<br>开启 <b style=\"color: #0078d7;\">{fixed_preset}</b> 后自动战斗将直接采用此阵容, 无需等待特征识别 (未录入特征的角色亦可直接战斗)。<br>点击 <b style=\"color: #0078d7;\">{fill_scan}</b> 可将上方特征扫描识别出的队伍角色快速填入当前方案。</p>"
 
 msgid "OpenVINO 单次推理超时，已自动关闭目标检测；重启程序后会重新尝试启用。"
+msgstr ""
+
+msgid "管理"
+msgstr ""
+
+msgid "批量删除"
+msgstr ""
+
+msgid "当前未绑定任何{combo}.\n遇到此角色将默认使用基础通用脚本(BaseChar)."
 msgstr ""

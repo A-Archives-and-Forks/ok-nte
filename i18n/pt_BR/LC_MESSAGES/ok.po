@@ -165,12 +165,8 @@ msgstr "{combo} desvinculado de {}"
 msgid "应用更改"
 msgstr "Aplicar Alterações"
 
-msgid ""
-"当前未绑定任何{combo}。\n"
-"遇到此角色将默认使用基础通用脚本(BaseChar)。"
-msgstr ""
-"Nenhum {combo} vinculado atualmente.\n"
-"Este personagem usará o script genérico básico (BaseChar) por padrão."
+msgid "当前未绑定任何{combo}.\n遇到此角色将默认使用基础通用脚本(BaseChar)."
+msgstr "Nenhum {combo} está vinculado no momento.\nEste personagem usará o script genérico básico (BaseChar) por padrão."
 
 msgid "循环次数"
 msgstr "Contagem de Ciclos"
@@ -214,12 +210,8 @@ msgstr "Característica não obtida"
 msgid "关联特征"
 msgstr "Vincular característica"
 
-msgid ""
-"此为 Python 脚本，不可在此修改。\n"
-"请在对应的源文件中直接修改代码。"
-msgstr ""
-"Este script Python não pode ser modificado aqui.\n"
-"Modifique o código diretamente no arquivo de origem correspondente."
+msgid "此为 Python 脚本, 不可在此修改.\n请在对应的源文件中直接修改代码."
+msgstr "Este é um script Python e não pode ser modificado aqui.\nPor favor, modifique o código diretamente no arquivo-fonte correspondente."
 
 msgid "没有找到匹配的指令。"
 msgstr "Nenhum comando correspondente encontrado."
@@ -284,8 +276,8 @@ msgstr "Pular História"
 msgid "运行一次测试"
 msgstr "Executar um teste"
 
-msgid "下拉选择，或直接输入名称以创建新{combo}"
-msgstr "Selecione no menu suspenso ou insira diretamente um nome para criar um novo {combo}"
+msgid "下拉选择, 或直接输入名称以创建新{combo}"
+msgstr "Selecione no menu suspenso ou insira um nome para criar um novo {combo}"
 
 msgid "重命名失败"
 msgstr "Falha ao renomear"
@@ -620,7 +612,7 @@ msgstr "Móveis de Anomalia"
 msgid "每2小时重新登入"
 msgstr "Fazer login novamente a cada 2 horas"
 
-msgid "除了选择内建存在的<b style=\"color: #0078d7;\">{combo}</b>外，您也可以自己输入名称来建立自己的<b style=\"color: #0078d7;\">{combo}</b>。"
+msgid "除了选择内建存在的<b style=\"color: #0078d7;\">{combo}</b>外,您也可以自己输入名称来建立自己的<b style=\"color: #0078d7;\">{combo}</b>."
 msgstr "Além de selecionar um <b style=\"color: #0078d7;\">{combo}</b> integrado, você também pode inserir um nome para criar seu próprio <b style=\"color: #0078d7;\">{combo}</b>."
 
 msgid "九百九十九夜"
@@ -893,8 +885,8 @@ msgstr "[Código externo]"
 msgid "打开外置代码目录"
 msgstr "Abrir pasta de código externo"
 
-msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>。"
-msgstr "Após adicionar ou modificar manualmente o código Python, clique no botão [{refresh}] para que as alterações entrem em vigor.<br>Para obter um guia sobre como escrever tabelas de combos de personagens, consulte a <a href='{doc_url}'>documentação</a>."
+msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效.<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>."
+msgstr "Após adicionar ou modificar manualmente o código Python, clique no botão [{refresh}] para aplicar.<br>Para um guia sobre como escrever tabelas de combo de personagens, consulte a <a href='{doc_url}'>documentação</a>."
 
 msgid "日常领取"
 msgstr "Resgate Diário"
@@ -1021,3 +1013,9 @@ msgstr "<p>Configure e salve formações e combos de equipe de 4 personagens, co
 
 msgid "OpenVINO 单次推理超时，已自动关闭目标检测；重启程序后会重新尝试启用。"
 msgstr "O tempo de inferência única do OpenVINO esgotou, a detecção de alvos foi desativada automaticamente. Será tentada a reativação ao reiniciar o programa."
+
+msgid "管理"
+msgstr "Gerenciar"
+
+msgid "批量删除"
+msgstr "Exclusão em Lote"

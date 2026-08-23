@@ -198,12 +198,8 @@ msgstr "未獲取到特徵"
 msgid "关联特征"
 msgstr "關聯特徵"
 
-msgid ""
-"此为 Python 脚本，不可在此修改。\n"
-"请在对应的源文件中直接修改代码。"
-msgstr ""
-"此為 Python 腳本，不可在此修改。\n"
-"請在對應的源文件中直接修改代碼。"
+msgid "此为 Python 脚本, 不可在此修改.\n请在对应的源文件中直接修改代码."
+msgstr "此為 Python 腳本, 不可在此修改.\n請在對應的源檔案中直接修改程式碼."
 
 msgid "没有找到匹配的指令。"
 msgstr "沒有找到匹配的指令。"
@@ -265,8 +261,8 @@ msgstr "跳過劇情"
 msgid "运行一次测试"
 msgstr "運行一次測試"
 
-msgid "下拉选择，或直接输入名称以创建新{combo}"
-msgstr "下拉選擇，或直接輸入名稱以建立新{combo}"
+msgid "下拉选择, 或直接输入名称以创建新{combo}"
+msgstr "下拉選擇, 或直接輸入名稱以創建新{combo}"
 
 msgid "重命名失败"
 msgstr "重新命名失敗"
@@ -883,8 +879,8 @@ msgstr "異象家具"
 msgid "每2小时重新登入"
 msgstr "每2小時重新登入"
 
-msgid "除了选择内建存在的<b style=\"color: #0078d7;\">{combo}</b>外，您也可以自己输入名称来建立自己的<b style=\"color: #0078d7;\">{combo}</b>。"
-msgstr "除了選擇內建存在的<b style=\"color: #0078d7;\">{combo}</b>外，您也可以自己輸入名稱來建立自己的<b style=\"color: #0078d7;\">{combo}</b>。"
+msgid "除了选择内建存在的<b style=\"color: #0078d7;\">{combo}</b>外,您也可以自己输入名称来建立自己的<b style=\"color: #0078d7;\">{combo}</b>."
+msgstr "除了選擇內建存在的<b style=\"color: #0078d7;\">{combo}</b>外,您也可以自己輸入名稱來建立自己的<b style=\"color: #0078d7;\">{combo}</b>."
 
 msgid "九百九十九夜"
 msgstr "九百九十九夜"
@@ -1166,8 +1162,8 @@ msgstr "[外置代碼]"
 msgid "打开外置代码目录"
 msgstr "開啟外置程式碼目錄"
 
-msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效。<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>。"
-msgstr "手動新增或修改 Python 程式碼後，需點擊 [{refresh}] 按鈕以生效。<br>關於編寫角色出招表的指南，請參考 <a href='{doc_url}'>文件</a>。"
+msgid "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效.<br>关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>."
+msgstr "手動新增或修改 Python 程式碼後, 需點擊 [{refresh}] 按鈕以生效.<br>關於編寫角色出招表的指南, 請參考 <a href='{doc_url}'>文檔</a>."
 
 msgid "日常领取"
 msgstr "日常領取"
@@ -1294,3 +1290,12 @@ msgstr "<p>用於配置並儲存常用的 4 人隊伍陣容與出招表, 修改�
 
 msgid "OpenVINO 单次推理超时，已自动关闭目标检测；重启程序后会重新尝试启用。"
 msgstr "OpenVINO 單次推論超時，已自動關閉目標檢測；重啟程式後會重新嘗試啟用。"
+
+msgid "管理"
+msgstr "管理"
+
+msgid "批量删除"
+msgstr "批量刪除"
+
+msgid "当前未绑定任何{combo}.\n遇到此角色将默认使用基础通用脚本(BaseChar)."
+msgstr "目前未綁定任何{combo}.\n遇到此角色將預設使用基礎通用腳本(BaseChar)."
