@@ -630,10 +630,9 @@ class CharManagerTab(CustomTab):
         # 【区块 3 纯文本展示区：TextEdit (只读纯文本)】
         self.doc_text_edit = TextEdit(self.doc_wing)
         self.doc_text_edit.setReadOnly(True)
-        raw_doc = (
-            self._doc_cache_by_locale.get(self._locale_name(), self._doc_cache)
-            or self.generate_doc()
-        )
+        raw_doc = self._doc_cache_by_locale.get(
+            self._locale_name(), self._doc_cache
+        ) or self.generate_doc(start_translation=False)
         self.doc_text_edit.setPlainText(raw_doc)
         self.doc_wing_layout.addWidget(self.doc_text_edit, 1)
 
@@ -647,6 +646,9 @@ class CharManagerTab(CustomTab):
             self.doc_divider.setVisible(show)
         if self.combo_doc_btn.isChecked() != show:
             self.combo_doc_btn.setChecked(show)
+        if show:
+            self.generate_doc(start_translation=True)
+            self._filter_doc_commands(self.doc_search.text())
 
     def show_doc_dialog(self):
         self.toggle_doc_wing(True)
@@ -1062,7 +1064,7 @@ class CharManagerTab(CustomTab):
             parent=self.window(),
         )
 
-    def generate_doc(self):
+    def generate_doc(self, start_translation: bool = True):
         try:
             from src.char.custom.CustomChar import CustomChar
 
@@ -1107,6 +1109,9 @@ class CharManagerTab(CustomTab):
 
             if locale_name in self._doc_cache_by_locale:
                 return self._doc_cache_by_locale[locale_name]
+
+            if not start_translation:
+                return text
 
             if locale_name not in self._doc_translation_pending_locales:
                 self._doc_translation_pending_locales.add(locale_name)
