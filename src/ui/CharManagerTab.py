@@ -1399,9 +1399,9 @@ class CharManagerTab(CustomTab):
             f"Mozilla/5.0 ({os_info}) AppleWebKit/537.36 "
             "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
-        response = requests.get(
+        response = requests.post(
             "https://translate.googleapis.com/translate_a/single",
-            params={
+            data={
                 "client": "gtx",
                 "sl": "auto",
                 "tl": target_lang,
@@ -1409,7 +1409,7 @@ class CharManagerTab(CustomTab):
                 "q": text,
             },
             headers={"User-Agent": ua},
-            timeout=4,
+            timeout=8,
         )
         response.raise_for_status()
         data = response.json()

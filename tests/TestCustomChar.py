@@ -475,6 +475,20 @@ class TestCustomChar(TaskTestCase):
                 "[内置代码] 零",
             )
 
+    @patch("requests.post")
+    def test_google_translate_text_uses_post_request(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.json.return_value = [[["Translated text", "Source text", None, None]]]
+        mock_post.return_value = mock_response
+
+        res = CharManagerTab._google_translate_text("Source text", "en-US")
+        self.assertEqual(res, "Translated text")
+        mock_post.assert_called_once()
+        _, kwargs = mock_post.call_args
+        self.assertIn("data", kwargs)
+        self.assertEqual(kwargs["data"]["q"], "Source text")
+        self.assertEqual(kwargs["data"]["tl"], "en-US")
+
 
 if __name__ == "__main__":
     unittest.main()
