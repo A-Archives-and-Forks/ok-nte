@@ -405,19 +405,20 @@ class PresetSlotRow(QWidget):
         self._loading = False
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
+        layout.setSpacing(12)
 
         self.slot_label = StrongBodyLabel(og.app.tr("{} 号位").format(index + 1), self)
         layout.addWidget(self.slot_label)
 
         self.char_combo = SearchableComboBox(self)
         self.char_combo.setPlaceholderText(og.app.tr("输入或选择角色"))
+        self.char_combo.setFixedHeight(34)
         layout.addWidget(self.char_combo)
 
         self.combo_list = SearchableComboBox(self)
         self.combo_list.setPlaceholderText(og.app.tr("输入或选择出招表"))
+        self.combo_list.setFixedHeight(34)
         layout.addWidget(self.combo_list)
-        layout.addStretch(1)
 
         self.char_combo.currentIndexChanged.connect(self._on_character_changed)
         self.combo_list.currentIndexChanged.connect(self._emit_changed)
@@ -546,7 +547,6 @@ class TeamManagerTab(CustomTab):
     def _build_ui(self) -> None:
         self._add_scan_section()
         self._add_preset_section()
-        self.vbox.addStretch(1)
 
     def _add_scan_section(self) -> None:
         header = QHBoxLayout()
@@ -595,6 +595,7 @@ class TeamManagerTab(CustomTab):
         # Left panel: Presets list card
         self.preset_list_card = SimpleCardWidget(self.view)
         self.preset_list_card.setMinimumWidth(240)
+        self.preset_list_card.setMinimumHeight(340)
         self.preset_list_card.setSizePolicy(
             QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding
         )
@@ -676,16 +677,17 @@ class TeamManagerTab(CustomTab):
         right_layout.addWidget(self.preset_top_card)
 
         self.preset_slots_card = SimpleCardWidget(self.view)
+        self.preset_slots_card.setMinimumHeight(300)
         self.preset_slots_card.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
         slots_layout = QVBoxLayout(self.preset_slots_card)
-        slots_layout.setContentsMargins(24, 20, 24, 20)
-        slots_layout.setSpacing(16)
+        slots_layout.setContentsMargins(28, 24, 28, 24)
+        slots_layout.setSpacing(20)
 
         grid_layout = QGridLayout()
         grid_layout.setHorizontalSpacing(32)
-        grid_layout.setVerticalSpacing(20)
+        grid_layout.setVerticalSpacing(26)
         grid_layout.setRowStretch(0, 1)
         grid_layout.setRowStretch(1, 1)
 
@@ -700,7 +702,7 @@ class TeamManagerTab(CustomTab):
         right_layout.addWidget(self.preset_slots_card, 1)
 
         content.addLayout(right_layout, 3)
-        self.vbox.addLayout(content)
+        self.vbox.addLayout(content, 1)
         self._set_editor_enabled(False)
 
     def _set_editor_enabled(self, enabled: bool) -> None:
