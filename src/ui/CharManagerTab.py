@@ -519,7 +519,7 @@ class CharManagerTab(CustomTab):
         dialog.yesButton.setText(self.tr("关闭"))
         dialog.cancelButton.hide()
 
-        modified = False
+        dialog.setProperty("combos_modified", False)
 
         def populate_combos():
             combo_list_widget.list_widget.clear()
@@ -552,7 +552,6 @@ class CharManagerTab(CustomTab):
         combo_list_widget.list_widget.itemSelectionChanged.connect(on_selection_changed)
 
         def on_batch_delete():
-            nonlocal modified
             selected_items = combo_list_widget.list_widget.selectedItems()
             if not selected_items:
                 return
@@ -579,7 +578,7 @@ class CharManagerTab(CustomTab):
                     if char_data.get("impl_id", "") == cid:
                         self.manager.update_character(char_id, impl_id="")
 
-            modified = True
+            dialog.setProperty("combos_modified", True)
             populate_combos()
             editor_text.clear()
 
@@ -598,7 +597,7 @@ class CharManagerTab(CustomTab):
 
         dialog.exec()
 
-        if modified:
+        if dialog.property("combos_modified"):
             self._reload_combo_options()
             if self.current_char_id:
                 self._render_right_panel()
