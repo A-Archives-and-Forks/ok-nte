@@ -47,11 +47,12 @@ class CustomCharManager:
         from src.char.core.CharRegistry import char_registry
 
         context = MigrationContext(
-            is_builtin_impl=self.is_registered_impl,
+            is_builtin_impl=self.is_builtin_impl,
             get_builtin_prefix=self.get_builtin_prefix,
             iter_builtin_impl_items=self.iter_builtin_impl_items,
             generate_combo_id=lambda _existing: f"combo_{uuid.uuid4().hex}",
             get_external_impl_ids_by_class_name=char_registry.get_external_impl_ids_by_class_name,
+            is_registered_impl=self.is_registered_impl,
         )
         self._db = CustomCharDb(DB_PATH, FEATURES_DIR, context, logger)
         self._feature_cache = {}
@@ -229,6 +230,42 @@ class CustomCharManager:
     def delete_combo(self, combo_id: str):
         """删除出招表"""
         self._db.delete_combo(combo_id)
+
+    @staticmethod
+    def _external_impl_path(impl_id: str) -> Path | None:
+        impl_id = "" if impl_id is None else str(impl_id)
+        if not impl_id.startswith("external:"):
+            return None
+
+        relative_stem = impl_id.removeprefix("external:")
+        root = Path(EXTERNAL_CHARS_DIR).resolve()
+        candidate = (root / f"{relative_stem}.py").resolve()
+        try:
+            candidate.relative_to(root)
+        except ValueError:
+            return None
+        return candidate
+
+    def delete_external_impl(self, impl_id: str) -> bool:
+        """Delete an external character source file and its now-empty source folder."""
+        source_path = self._external_impl_path(impl_id)
+        if source_path is None or not source_path.is_file():
+            return False
+
+        try:
+            source_path.unlink()
+            external_root = Path(EXTERNAL_CHARS_DIR).resolve()
+            source_folder = source_path.parent
+            if source_folder != external_root and not any(source_folder.glob("*.py")):
+                shutil.rmtree(source_folder)
+        except OSError as error:
+            logger.error(f"Failed to delete external character source: {source_path.name}", error)
+            return False
+
+        from src.char.core.CharRegistry import char_registry
+
+        char_registry.rescan_external()
+        return True
 
     def is_custom_combo_exist(self, combo_id: str):
         """判断出招表是否存在"""

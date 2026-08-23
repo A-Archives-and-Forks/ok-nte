@@ -6,6 +6,7 @@ import uuid
 import zipfile
 from unittest.mock import Mock, patch
 
+from src.char.core.CharRegistry import char_registry
 from src.char.custom.CustomChar import CustomChar
 from src.char.custom.CustomCharDb import DB_SCHEMA_VERSION, CustomCharDb
 from src.char.custom.CustomCharDbMigrator import CustomCharDbMigrator, MigrationContext
@@ -54,6 +55,40 @@ class TestCustomCharCore(unittest.TestCase):
     def test_manager_creates_external_characters_directory(self):
         CustomCharManager()
 
+        self.assertTrue(os.path.isdir(self.external_chars_dir))
+
+    def test_delete_external_impl_removes_source_and_empty_child_folder(self):
+        manager = CustomCharManager()
+        self.addCleanup(char_registry.rescan_external)
+        team_dir = os.path.join(self.external_chars_dir, "test_team")
+        os.makedirs(team_dir)
+        source_template = (
+            "from src.char.BaseChar import BaseChar, Element\n\n"
+            "class {class_name}(BaseChar):\n"
+            "    cn_name = '{cn_name}'\n"
+            "    en_name = '{class_name}'\n"
+            "    element = Element.PURPLE\n"
+        )
+        first_source = os.path.join(team_dir, "first.py")
+        second_source = os.path.join(team_dir, "second.py")
+        with open(first_source, "w", encoding="utf-8") as file:
+            file.write(source_template.format(class_name="FirstExternal", cn_name="甲"))
+        with open(second_source, "w", encoding="utf-8") as file:
+            file.write(source_template.format(class_name="SecondExternal", cn_name="乙"))
+
+        char_registry.rescan_external()
+        first_impl_id = "external:test_team/first"
+        second_impl_id = "external:test_team/second"
+        char_id = manager.create_character("external_user", first_impl_id)
+
+        self.assertEqual(manager.get_character_impl_id_by_id(char_id), first_impl_id)
+        self.assertTrue(manager.delete_external_impl(first_impl_id))
+        self.assertFalse(os.path.exists(first_source))
+        self.assertTrue(os.path.isdir(team_dir))
+        self.assertTrue(os.path.isfile(second_source))
+
+        self.assertTrue(manager.delete_external_impl(second_impl_id))
+        self.assertFalse(os.path.exists(team_dir))
         self.assertTrue(os.path.isdir(self.external_chars_dir))
 
     def test_import_removes_stale_external_character_files(self):
@@ -174,7 +209,9 @@ class TestCustomCharCore(unittest.TestCase):
         self.assertTrue(manager.is_custom_combo_exist(remapped_key))
         self.assertEqual(manager.get_combo(remapped_key), "skill,wait(0.1)")
 
-        info = manager.get_character_info_by_id(self._character_id_by_name(manager, "char_conflict"))
+        info = manager.get_character_info_by_id(
+            self._character_id_by_name(manager, "char_conflict")
+        )
         self.assertIsNotNone(info)
         self.assertEqual(info["impl_id"], remapped_key)
         self.assertNotIn("combo_ref", info)
