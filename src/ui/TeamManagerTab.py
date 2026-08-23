@@ -678,18 +678,14 @@ class TeamManagerTab(CustomTab):
 
         self.preset_slots_card = SimpleCardWidget(self.view)
         self.preset_slots_card.setMinimumHeight(300)
-        self.preset_slots_card.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-        )
+        self.preset_slots_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         slots_layout = QVBoxLayout(self.preset_slots_card)
         slots_layout.setContentsMargins(28, 24, 28, 24)
         slots_layout.setSpacing(20)
 
         grid_layout = QGridLayout()
         grid_layout.setHorizontalSpacing(32)
-        grid_layout.setVerticalSpacing(26)
-        grid_layout.setRowStretch(0, 1)
-        grid_layout.setRowStretch(1, 1)
+        grid_layout.setVerticalSpacing(24)
 
         self.preset_rows: list[PresetSlotRow] = []
         for index in range(4):
@@ -699,7 +695,8 @@ class TeamManagerTab(CustomTab):
             grid_layout.addWidget(row, index // 2, index % 2)
 
         slots_layout.addLayout(grid_layout)
-        right_layout.addWidget(self.preset_slots_card, 1)
+        right_layout.addWidget(self.preset_slots_card)
+        right_layout.addStretch(1)
 
         content.addLayout(right_layout, 3)
         self.vbox.addLayout(content, 1)

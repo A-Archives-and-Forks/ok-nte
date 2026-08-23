@@ -7,7 +7,7 @@ from ok import og
 from ok.ui.qt.widget.CustomTab import CustomTab
 from ok.util.explorer import open_explorer_folder, reveal_in_explorer
 from PySide6.QtCore import QEvent, Qt, QTimer, Signal, Slot
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFileDialog,
@@ -20,7 +20,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from qfluentwidgets import (
+    BodyLabel,
     CaptionLabel,
+    CommandBar,
     FlowLayout,
     FluentIcon,
     Flyout,
@@ -78,6 +80,21 @@ class CharManagerTab(CustomTab):
         )
         self.tr_import_data = self.tr("导入数据")
         self.tr_open_external_chars_folder = self.tr("打开外置代码目录")
+        self.tr_show_builtin = self.tr("显示内置")
+        self.tr_copy_to_external = self.tr("复制为外置")
+        self.tr_batch_delete = self.tr("批量删除")
+        self.tr_copy_success = self.tr("复制成功")
+        self.tr_copy_failed = self.tr("复制失败")
+        self.tr_copy_success_msg = self.tr("已成功创建外置代码: {}")
+        self.tr_copy_dialog_title = self.tr("复制为外置代码")
+        self.tr_copy_directory = self.tr("目录")
+        self.tr_copy_file_name = self.tr("脚本文件名 (.py)")
+        self.tr_copy_dialog_hint = self.tr(
+            "将在 external_chars/ 目录下生成独立的 Python 脚本供您编辑与调试."
+        )
+        self.tr_code_source_unavailable = self.tr("无法读取 Python 脚本.")
+        self.tr_external_save_failed = self.tr("外置代码应用失败")
+        self.tr_external_save_msg = self.tr("已应用外置代码: {}")
         self.tr_data_manager_hint = self.tr(
             "导入数据会完整覆盖当前用户资料.\n导出数据会导出完整用户资料."
         )
@@ -86,7 +103,7 @@ class CharManagerTab(CustomTab):
             "https://github.com/BnanZ0/ok-nte/blob/main/docs/en/development/combat-planner.md"
         )
         self.tr_external_chars_hint = self.tr(
-            "手动添加或修改 Python 代码后, 需点击 [{refresh}] 按钮以生效.<br>"
+            "手动添加或修改 Python 代码后, 需点击 [{refresh}] 以生效. "
             "关于编写角色出招表的指南, 请参考 <a href='{doc_url}'>文档</a>."
         ).format(
             refresh=self.tr("刷新列表"),
@@ -118,9 +135,6 @@ class CharManagerTab(CustomTab):
         self.tr_unbound_text = self.tr(
             "当前未绑定任何{combo}.\n遇到此角色将默认使用基础通用脚本(BaseChar)."
         ).replace("{combo}", self.tr_combo_title)
-        self.tr_code_impl_text = self.tr(
-            "此为 Python 脚本, 不可在此修改.\n请在对应的源文件中直接修改代码."
-        )
         self.tr_no_match_cmd = self.tr("没有找到匹配的指令。")
 
         self.icon = FluentIcon.PEOPLE
@@ -458,18 +472,8 @@ class CharManagerTab(CustomTab):
         data_manager_hint.setWordWrap(True)
         dialog.viewLayout.addWidget(data_manager_hint)
 
-        open_external_chars_folder_btn = PushButton(
-            FluentIcon.FOLDER, self.tr_open_external_chars_folder, dialog
-        )
-        dialog.viewLayout.addWidget(open_external_chars_folder_btn)
-        external_chars_hint = CaptionLabel(self.tr_external_chars_hint, dialog)
-        external_chars_hint.setOpenExternalLinks(True)
-        external_chars_hint.setWordWrap(True)
-        dialog.viewLayout.addWidget(external_chars_hint)
-
         import_data_btn.clicked.connect(self.on_import_data)
         export_data_btn.clicked.connect(self.on_export_data)
-        open_external_chars_folder_btn.clicked.connect(self.on_open_external_chars_folder)
         dialog.yesButton.setText(self.tr("关闭"))
         dialog.cancelButton.hide()
         dialog.exec()
@@ -480,15 +484,48 @@ class CharManagerTab(CustomTab):
         dialog.widget.setMinimumHeight(560)
         dialog.viewLayout.setSpacing(12)
 
-        # Title bar: '管理' on left, '批量删除' button on right
-        title_layout = QHBoxLayout()
+        # Title bar: '管理' label
         title_label = SubtitleLabel(self.tr("管理"), dialog)
-        title_layout.addWidget(title_label)
-        title_layout.addStretch(1)
+        dialog.viewLayout.addWidget(title_label)
 
-        batch_delete_btn = PushButton(FluentIcon.DELETE, self.tr("批量删除"), dialog)
-        title_layout.addWidget(batch_delete_btn)
-        dialog.viewLayout.addLayout(title_layout)
+        external_chars_hint = CaptionLabel(self.tr_external_chars_hint, dialog)
+        external_chars_hint.setOpenExternalLinks(True)
+        external_chars_hint.setWordWrap(True)
+        dialog.viewLayout.addWidget(external_chars_hint)
+
+        # CommandBar in SimpleCardWidget
+        command_card = SimpleCardWidget(dialog)
+        command_layout = QHBoxLayout(command_card)
+        command_layout.setContentsMargins(10, 6, 10, 6)
+
+        command_bar = CommandBar(command_card)
+        command_bar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        command_bar.setButtonTight(True)
+
+        toggle_builtin_action = QAction(FluentIcon.VIEW.icon(), self.tr_show_builtin, command_bar)
+        toggle_builtin_action.setCheckable(True)
+        toggle_builtin_action.setChecked(False)
+
+        copy_builtin_action = QAction(FluentIcon.COPY.icon(), self.tr_copy_to_external, command_bar)
+        copy_builtin_action.setEnabled(False)
+
+        batch_delete_action = QAction(FluentIcon.DELETE.icon(), self.tr_batch_delete, command_bar)
+        batch_delete_action.setEnabled(False)
+
+        open_folder_action = QAction(
+            FluentIcon.FOLDER.icon(), self.tr_open_external_chars_folder, command_bar
+        )
+
+        command_bar.addAction(toggle_builtin_action)
+        command_bar.addSeparator()
+        command_bar.addAction(copy_builtin_action)
+        command_bar.addSeparator()
+        command_bar.addAction(batch_delete_action)
+        command_bar.addSeparator()
+        command_bar.addAction(open_folder_action)
+
+        command_layout.addWidget(command_bar, 1)
+        dialog.viewLayout.addWidget(command_card)
 
         # Master-Detail layout: 5:5 split between List and Preview
         content_layout = QHBoxLayout()
@@ -506,11 +543,10 @@ class CharManagerTab(CustomTab):
         )
         content_layout.addWidget(combo_list_widget, 1)
 
-        # Right column: Detail preview (50% width, disabled state, no preview label)
+        # Right column: Detail preview (50% width, read-only state)
         editor_text = TextEdit(dialog)
         editor_text.setPlaceholderText(self.tr_unbound_text)
         editor_text.setReadOnly(True)
-        editor_text.setEnabled(False)
         content_layout.addWidget(editor_text, 1)
 
         dialog.viewLayout.addLayout(content_layout, 1)
@@ -521,35 +557,142 @@ class CharManagerTab(CustomTab):
 
         dialog.setProperty("combos_modified", False)
 
-        def populate_combos():
+        def populate_combos(target_selected_id=None, select_first=False):
             combo_list_widget.list_widget.clear()
-            for combo_name, combo_id in self._get_manageable_impl_items():
+            show_builtin = toggle_builtin_action.isChecked()
+            if show_builtin:
+                items = self.manager.get_all_impl_items(with_source_prefix=True)
+            else:
+                items = self._get_manageable_impl_items()
+
+            target_item = None
+            for combo_name, combo_id in items:
                 item = QListWidgetItem(combo_name)
                 item.setData(Qt.ItemDataRole.UserRole, combo_id)
                 combo_list_widget.list_widget.addItem(item)
+                if target_selected_id and combo_id == target_selected_id:
+                    target_item = item
 
-        populate_combos()
+            if target_item:
+                target_item.setSelected(True)
+                combo_list_widget.list_widget.scrollToItem(target_item)
+            elif select_first and combo_list_widget.list_widget.count():
+                combo_list_widget.list_widget.setCurrentRow(0)
+            on_selection_changed()
 
         def on_selection_changed():
             selected_items = combo_list_widget.list_widget.selectedItems()
             if not selected_items:
                 editor_text.clear()
                 editor_text.setPlaceholderText(self.tr_unbound_text)
+                copy_builtin_action.setEnabled(False)
+                batch_delete_action.setEnabled(False)
                 return
+
+            builtin_selected = [
+                it
+                for it in selected_items
+                if self.manager.is_builtin_impl(it.data(Qt.ItemDataRole.UserRole))
+            ]
+            deletable_selected = [
+                it
+                for it in selected_items
+                if not self.manager.is_builtin_impl(it.data(Qt.ItemDataRole.UserRole))
+            ]
+
+            copy_builtin_action.setEnabled(len(selected_items) == 1 and len(builtin_selected) == 1)
+            batch_delete_action.setEnabled(len(deletable_selected) > 0)
 
             if len(selected_items) == 1:
                 item = selected_items[0]
                 cid = item.data(Qt.ItemDataRole.UserRole)
-                if self.manager.is_registered_impl(cid):
-                    editor_text.setText(self.tr_code_impl_text)
+                if self.manager.is_builtin_impl(cid):
+                    source = self.manager.get_builtin_impl_source(cid)
+                    editor_text.setPlainText(source or self.tr_code_source_unavailable)
+                elif self.manager.is_registered_impl(cid):
+                    source = self.manager.get_external_impl_source(cid)
+                    editor_text.setPlainText(source or self.tr_code_source_unavailable)
                 else:
                     content = self.manager.get_combo(cid)
-                    editor_text.setText(content or "")
+                    editor_text.setPlainText(content or "")
             else:
                 names = [it.text() for it in selected_items]
-                editor_text.setText("\n• ".join([""] + names).strip())
+                editor_text.setPlainText("\n• ".join([""] + names).strip())
 
         combo_list_widget.list_widget.itemSelectionChanged.connect(on_selection_changed)
+        toggle_builtin_action.triggered.connect(lambda: populate_combos(select_first=True))
+        open_folder_action.triggered.connect(self.on_open_external_chars_folder)
+
+        def on_copy_builtin():
+            selected_items = combo_list_widget.list_widget.selectedItems()
+            if len(selected_items) != 1:
+                return
+            item = selected_items[0]
+            cid = item.data(Qt.ItemDataRole.UserRole)
+            if not self.manager.is_builtin_impl(cid):
+                return
+
+            default_filename = cid.removeprefix("builtin:").capitalize()
+
+            copy_dialog = MessageBoxBase(dialog)
+            copy_dialog.widget.setMinimumWidth(440)
+            copy_dialog.viewLayout.setSpacing(10)
+
+            copy_dialog_title = SubtitleLabel(self.tr_copy_dialog_title, copy_dialog)
+            copy_dialog.viewLayout.addWidget(copy_dialog_title)
+
+            copy_hint = CaptionLabel(self.tr_copy_dialog_hint, copy_dialog)
+            copy_hint.setWordWrap(True)
+            copy_dialog.viewLayout.addWidget(copy_hint)
+
+            directory_title = BodyLabel(self.tr_copy_directory, copy_dialog)
+            copy_dialog.viewLayout.addWidget(directory_title)
+            directory_edit = LineEdit(copy_dialog)
+            copy_dialog.viewLayout.addWidget(directory_edit)
+            copy_dialog.yesButton.setEnabled(False)
+            directory_edit.textChanged.connect(
+                lambda directory: copy_dialog.yesButton.setEnabled(bool(directory.strip()))
+            )
+
+            file_title = BodyLabel(self.tr_copy_file_name, copy_dialog)
+            copy_dialog.viewLayout.addWidget(file_title)
+            file_edit = LineEdit(copy_dialog)
+            file_edit.setText(default_filename)
+            copy_dialog.viewLayout.addWidget(file_edit)
+
+            if not copy_dialog.exec():
+                return
+
+            directory = directory_edit.text().strip()
+            new_filename = file_edit.text().strip()
+            success, new_impl_id, err = self.manager.copy_builtin_to_external(
+                cid, directory, new_filename
+            )
+            if not success:
+                InfoBar.error(
+                    title=self.tr_copy_failed,
+                    content=err or "",
+                    orient=Qt.Orientation.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=3000,
+                    parent=dialog,
+                )
+                return
+
+            dialog.setProperty("combos_modified", True)
+            populate_combos(target_selected_id=new_impl_id)
+            InfoBar.success(
+                title=self.tr_copy_success,
+                content=self.tr_copy_success_msg.format(new_impl_id.removeprefix("external:")),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=2500,
+                parent=dialog,
+            )
+
+        copy_builtin_action.triggered.connect(on_copy_builtin)
 
         def on_batch_delete():
             selected_items = combo_list_widget.list_widget.selectedItems()
@@ -593,7 +736,9 @@ class CharManagerTab(CustomTab):
                 parent=dialog,
             )
 
-        batch_delete_btn.clicked.connect(on_batch_delete)
+        batch_delete_action.triggered.connect(on_batch_delete)
+
+        populate_combos()
 
         dialog.exec()
 
@@ -763,7 +908,7 @@ class CharManagerTab(CustomTab):
         combo_name = self.manager.get_impl_name(combo_id, with_source_prefix=True)
         self._set_combo_selection_by_id(combo_id)
 
-        # Manually trigger the text change logic to ensure built-in warnings render
+        # Manually trigger the text change logic to ensure the implementation source renders.
         self.on_combo_changed(combo_name, combo_id)
 
         # update feature grid
@@ -808,12 +953,23 @@ class CharManagerTab(CustomTab):
         if combo_id is None:
             combo_id = self._resolve_combo_id(combo_name)
 
+        if self.manager.is_builtin_impl(combo_id):
+            source = self.manager.get_builtin_impl_source(combo_id)
+            self.combo_text.setPlainText(source or self.tr_code_source_unavailable)
+            self.combo_text.setReadOnly(True)
+            self.combo_text.setEnabled(True)
+            self.combo_save_btn.setEnabled(self.current_char_id is not None)
+            self.combo_test_btn.setEnabled(getattr(og.app, "debug", False))
+            self.combo_select.setReadOnly(False)
+            return
+
         is_code_impl = self.manager.is_registered_impl(combo_id)
         if is_code_impl:
-            self.combo_text.setText(self.tr_code_impl_text)
-            self.combo_text.setReadOnly(True)
-            self.combo_text.setEnabled(False)
-            self.combo_save_btn.setEnabled(self.current_char_id is not None)
+            source = self.manager.get_external_impl_source(combo_id)
+            self.combo_text.setPlainText(source or self.tr_code_source_unavailable)
+            self.combo_text.setReadOnly(False)
+            self.combo_text.setEnabled(True)
+            self.combo_save_btn.setEnabled(bool(source))
             self.combo_test_btn.setEnabled(getattr(og.app, "debug", False))
             self.combo_select.setReadOnly(False)
             return
@@ -837,9 +993,26 @@ class CharManagerTab(CustomTab):
         combo_input = self.combo_select.currentText().strip()
         combo_id = self._resolve_combo_id(combo_input)
         is_code_impl = self.manager.is_registered_impl(combo_id)
+        combo_source = self.combo_text.toPlainText()
+
+        if (
+            is_code_impl
+            and not self.manager.is_builtin_impl(combo_id)
+            and combo_source != self.manager.get_external_impl_source(combo_id)
+        ):
+            InfoBar.warning(
+                title=self.tr("应用更改"),
+                content=self.tr("请先应用外置代码更改后再运行测试."),
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3500,
+                parent=self.window(),
+            )
+            return
 
         if not is_code_impl:
-            combo_content = self.combo_text.toPlainText().strip()
+            combo_content = combo_source.strip()
             if not combo_content:
                 return
             from src.char.custom.CustomChar import CustomChar
@@ -879,19 +1052,35 @@ class CharManagerTab(CustomTab):
 
     def on_save_combo(self):
         combo_input = self.combo_select.currentText().strip()
-        combo_content = self.combo_text.toPlainText().strip()
+        combo_source = self.combo_text.toPlainText()
+        combo_content = combo_source.strip()
         combo_id = self._resolve_combo_id(combo_input)
         combo_name = self.manager.get_impl_name(combo_id, with_source_prefix=True)
         if not combo_name:
             combo_name = combo_input
 
+        is_builtin_impl = self.manager.is_builtin_impl(combo_id)
         is_code_impl = self.manager.is_registered_impl(combo_id)
 
-        if is_code_impl and not self.current_char_id:
+        if is_builtin_impl and not self.current_char_id:
             return
 
         if combo_input:
-            if not is_code_impl:
+            if is_code_impl and not is_builtin_impl:
+                success, error = self.manager.update_external_impl_source(combo_id, combo_source)
+                if not success:
+                    InfoBar.error(
+                        title=self.tr_external_save_failed,
+                        content=error,
+                        orient=Qt.Orientation.Horizontal,
+                        isClosable=True,
+                        position=InfoBarPosition.TOP,
+                        duration=3500,
+                        parent=self.window(),
+                    )
+                    return
+                combo_name = self.manager.get_impl_name(combo_id, with_source_prefix=True)
+            elif not is_code_impl:
                 from src.char.custom.CustomChar import CustomChar
 
                 is_valid, error = CustomChar.validate_combo_syntax(combo_content)
@@ -922,7 +1111,11 @@ class CharManagerTab(CustomTab):
 
             InfoBar.success(
                 title=self.tr_save_success,
-                content=self.tr_combo_msg.format(combo_name),
+                content=(
+                    self.tr_external_save_msg.format(combo_name)
+                    if is_code_impl and not is_builtin_impl
+                    else self.tr_combo_msg.format(combo_name)
+                ),
                 orient=Qt.Orientation.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,

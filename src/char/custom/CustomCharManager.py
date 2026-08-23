@@ -246,6 +246,143 @@ class CustomCharManager:
             return None
         return candidate
 
+    @classmethod
+    def _builtin_impl_path(cls, impl_id: str) -> Path | None:
+        impl_id = "" if impl_id is None else str(impl_id)
+        if not impl_id.startswith("builtin:"):
+            return None
+        from src.char.core.CharRegistry import char_registry
+
+        entry = char_registry.get(impl_id)
+        if entry is None or entry.source != "builtin":
+            return None
+        import inspect
+
+        try:
+            source_file = inspect.getsourcefile(entry.char_cls)
+            if source_file:
+                path = Path(source_file).resolve()
+                if path.is_file():
+                    return path
+        except (OSError, TypeError) as error:
+            logger.warning(
+                f"Failed to find builtin character source for {impl_id}: {error.__class__.__name__}"
+            )
+        return None
+
+    @staticmethod
+    def _read_impl_source(path: Path | None, source_kind: str) -> str:
+        if path and path.is_file():
+            try:
+                return path.read_text(encoding="utf-8")
+            except OSError as error:
+                logger.error(f"Failed to read {source_kind} character source: {path.name}", error)
+        return ""
+
+    def get_builtin_impl_source(self, impl_id: str) -> str:
+        return self._read_impl_source(self._builtin_impl_path(impl_id), "builtin")
+
+    def get_external_impl_source(self, impl_id: str) -> str:
+        return self._read_impl_source(self._external_impl_path(impl_id), "external")
+
+    def update_external_impl_source(self, impl_id: str, source_code: str) -> tuple[bool, str]:
+        source_path = self._external_impl_path(impl_id)
+        if source_path is None or not source_path.is_file():
+            return False, "External character source file was not found"
+
+        try:
+            compile(source_code, source_path.name, "exec")
+        except SyntaxError as error:
+            return False, f"{error.msg} (line {error.lineno})"
+
+        previous_source = self._read_impl_source(source_path, "external")
+        if not previous_source:
+            return False, "Could not read existing external character source"
+
+        try:
+            source_path.write_text(source_code, encoding="utf-8")
+        except OSError as error:
+            logger.error(f"Failed to write external character file: {source_path.name}", error)
+            return False, str(error)
+
+        from src.char.core.CharRegistry import char_registry
+
+        char_registry.rescan_external()
+        entry = char_registry.get(impl_id)
+        if entry is not None and entry.source == "external":
+            return True, ""
+
+        try:
+            source_path.write_text(previous_source, encoding="utf-8")
+        except OSError as error:
+            logger.error(f"Failed to restore external character file: {source_path.name}", error)
+            return (
+                False,
+                "Updated source could not be loaded and the original could not be restored",
+            )
+
+        char_registry.rescan_external()
+        return False, "Updated external character source could not be loaded"
+
+    def copy_builtin_to_external(
+        self, impl_id: str, directory: str, filename: str
+    ) -> tuple[bool, str, str]:
+        """Copy a builtin character implementation into an external character subfolder."""
+        source_code = self.get_builtin_impl_source(impl_id)
+        if not source_code:
+            return False, "", "Could not read builtin character source code"
+
+        import re
+
+        directory = str(directory or "").strip()
+        if not directory:
+            return False, "", "External character directory is required"
+        if not re.fullmatch(r"[\w-]+", directory):
+            return False, "", "External character directory contains unsupported characters"
+        if directory.startswith("_"):
+            return False, "", "External character directory cannot start with an underscore"
+
+        target_file_stem = str(filename or "").strip()
+        if target_file_stem.lower().endswith(".py"):
+            target_file_stem = target_file_stem[:-3]
+        safe_stem = re.sub(r"[^\w-]+", "_", target_file_stem).strip("_")
+        if not safe_stem:
+            return False, "", "Script filename is required"
+
+        external_root = Path(EXTERNAL_CHARS_DIR).resolve()
+        target_directory = external_root / directory
+        try:
+            target_directory.mkdir(parents=True, exist_ok=True)
+        except OSError as error:
+            logger.error("Failed to create external character directory", error)
+            return False, "", str(error)
+
+        target_path = (target_directory / f"{safe_stem}.py").resolve()
+        if target_path.exists():
+            return False, "", f"Target file '{safe_stem}.py' already exists"
+
+        try:
+            target_path.write_text(source_code, encoding="utf-8")
+        except OSError as error:
+            logger.error(f"Failed to write external character file: {target_path.name}", error)
+            return False, "", str(error)
+
+        from src.char.core.CharRegistry import char_registry
+
+        char_registry.rescan_external()
+        new_impl_id = f"external:{directory.lower()}/{safe_stem.lower()}"
+        entry = char_registry.get(new_impl_id)
+        if entry is None or entry.source != "external":
+            try:
+                target_path.unlink()
+            except OSError as error:
+                logger.error(
+                    f"Failed to remove invalid external character file: {target_path.name}", error
+                )
+            char_registry.rescan_external()
+            return False, "", "Generated external character file could not be loaded"
+        return True, new_impl_id, ""
+
     def delete_external_impl(self, impl_id: str) -> bool:
         """Delete an external character source file and its now-empty source folder."""
         source_path = self._external_impl_path(impl_id)
