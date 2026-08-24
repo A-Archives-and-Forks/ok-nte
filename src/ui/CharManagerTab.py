@@ -4,6 +4,8 @@ from pathlib import Path
 
 import requests
 from ok import og
+from ok.ui.qt.tasks.EditTaskTab import CodeEditor
+from ok.ui.qt.tasks.PythonHighlighter import PythonHighlighter
 from ok.ui.qt.util.app import show_info_bar
 from ok.ui.qt.widget.CustomTab import CustomTab
 from ok.util.explorer import open_explorer_folder, reveal_in_explorer
@@ -33,7 +35,7 @@ from qfluentwidgets import (
     InfoBarIcon,
     InfoBarPosition,
     LineEdit,
-    MessageBoxBase,
+    PlainTextEdit,
     PrimaryPushButton,
     PrimaryToolButton,
     PushButton,
@@ -53,6 +55,7 @@ from src.char.custom.CustomCharManager import EXTERNAL_CHARS_DIR, CustomCharMana
 from src.events import communicate
 from src.tasks.DebugCharTask import DebugCharTask
 from src.ui.features.characters.safety_dialog import confirm_external_code_import
+from src.ui.foundation.dialogs import MessageBoxBase
 from src.ui.foundation.images import cv_to_pixmap
 from src.ui.foundation.widgets.cards import BorderCardWidget
 from src.ui.foundation.widgets.search import (
@@ -311,9 +314,11 @@ class CharManagerTab(CustomTab):
         self.combo_main_layout.addLayout(self.combo_header_layout)
 
         # 【区块 2：出招表编辑区】
-        self.combo_text = TextEdit(self.combo_main_widget)
+        self.combo_text = CodeEditor(self.combo_main_widget)
+        self.combo_text.setLineWrapMode(PlainTextEdit.LineWrapMode.NoWrap)
         self.combo_text.setPlaceholderText("skill,wait(0.5),l_click(3),ultimate")
         self.combo_text.setMinimumHeight(140)
+        self.highlighter = PythonHighlighter(self.combo_text.document())
         self.combo_main_layout.addWidget(self.combo_text, 1)
 
         # 【区块 4：动作按钮组 (靠右排列)】
@@ -929,7 +934,7 @@ class CharManagerTab(CustomTab):
 
     def on_combo_changed(self, combo_name, combo_id=None):
         if combo_name == "":
-            self.combo_text.setText(self.tr_unbound_text)
+            self.combo_text.setPlainText(self.tr_unbound_text)
             self.combo_text.setReadOnly(True)
             self.combo_text.setEnabled(False)
             self.combo_save_btn.setEnabled(True)
@@ -975,7 +980,7 @@ class CharManagerTab(CustomTab):
         # If the combo matches an existing one, update the text area to show its content
         combo_content = self.manager.get_combo(combo_id)
         if combo_content:
-            self.combo_text.setText(combo_content)
+            self.combo_text.setPlainText(combo_content)
         else:
             self.combo_text.clear()
 

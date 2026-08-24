@@ -25,7 +25,6 @@ from qfluentwidgets import (
     InfoBarIcon,
     InfoBarPosition,
     LineEdit,
-    MessageBoxBase,
     PrimaryPushButton,
     PushButton,
     SimpleCardWidget,
@@ -37,6 +36,7 @@ from qfluentwidgets import (
 from src.char.custom.CustomCharManager import CustomCharManager
 from src.events import communicate
 from src.tasks.DebugCharTask import DebugCharTask, TeamScanResult
+from src.ui.foundation.dialogs import MessageBoxBase
 from src.ui.foundation.images import cv_to_pixmap
 from src.ui.foundation.widgets.cards import BorderCardWidget
 from src.ui.foundation.widgets.search import (
@@ -49,8 +49,7 @@ class NewCharDialog(MessageBoxBase):
     """Select or create a character while associating a scanned feature."""
 
     def __init__(self, mat, manager: CustomCharManager, parent=None):
-        self._owner_parent = parent or QWidget()
-        super().__init__(self._owner_parent)
+        super().__init__(parent)
         self.manager = manager
         self.tr_title = og.app.tr("关联特征")
         self.tr_name_ph = og.app.tr("输入或选择关联的角色名称")
@@ -135,8 +134,7 @@ class AddCharacterDialog(MessageBoxBase):
     """Create a new character without exposing the existing-character picker."""
 
     def __init__(self, manager: CustomCharManager, parent=None):
-        self._owner_parent = parent or QWidget()
-        super().__init__(self._owner_parent)
+        super().__init__(parent)
         self.manager = manager
         self.tr_name_duplicate = og.app.tr("角色名称无效或已存在")
         self.viewLayout.setSpacing(10)
