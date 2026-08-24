@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from src.char.custom.CustomChar import CustomChar
+from src.char.core.CharFactory import get_char_by_impl_id
 from src.char.custom.CustomCharDb import CustomCharDb
 from src.char.custom.CustomCharManager import CustomCharManager
 from src.config import config
@@ -371,7 +372,7 @@ class TestCustomChar(TaskTestCase):
         self.assertEqual(tab.preset_list.currentItem().data(Qt.ItemDataRole.UserRole), second["id"])
         self.assertFalse(tab.preset_list.currentItem().isHidden())
 
-    def test_team_manager_preset_slot_selects_and_clears_the_character_combo(self):
+    def test_team_manager_preset_slot_keeps_implementation_when_character_is_cleared(self):
         tab = TeamManagerTab(manager=self.manager)
         combo_id = self.manager.add_combo("combo_auto_select", "skill")
         char_id = self.manager.create_character("auto_select_char", combo_id)
@@ -385,8 +386,34 @@ class TestCustomChar(TaskTestCase):
 
         row.char_combo.setCurrentIndex(0)
 
-        self.assertEqual(row.get_data(), ("", ""))
-        self.assertEqual(row.combo_list.currentIndex(), 0)
+        self.assertEqual(row.get_data(), ("", combo_id))
+        self.assertEqual(row.combo_list.currentIndex(), row.combo_list.findData(combo_id))
+
+    def test_team_manager_preset_slot_allows_an_implementation_without_a_character(self):
+        tab = TeamManagerTab(manager=self.manager)
+        combo_id = self.manager.add_combo("combo_direct", "skill")
+        tab.reload_preset_options()
+        tab.on_create_preset()
+
+        row = tab.preset_rows[0]
+        row.combo_list.setCurrentIndex(row.combo_list.findData(combo_id))
+
+        self.assertEqual(row.get_data(), ("", combo_id))
+        preset = next(
+            preset
+            for preset in self.manager.get_team_presets()
+            if preset["id"] == tab.current_preset_id
+        )
+        self.assertEqual(preset["slots"][0], {"char_id": "", "impl_id": combo_id})
+
+    def test_char_factory_builds_direct_implementation_without_a_character_record(self):
+        combo_id = self.manager.add_combo("combo_direct_factory", "skill")
+
+        char = get_char_by_impl_id(self.task, index=0, impl_id=combo_id)
+
+        self.assertIsInstance(char, CustomChar)
+        self.assertEqual(char.char_id, "")
+        self.assertEqual(char.impl_id, combo_id)
 
     def test_team_manager_fills_only_empty_preset_slots(self):
         tab = TeamManagerTab(manager=self.manager)

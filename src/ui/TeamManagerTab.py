@@ -446,8 +446,6 @@ class PresetSlotRow(QWidget):
         self.combo_list.blockSignals(True)
         if char_info is not None:
             self._set_combo_by_id(char_info["impl_id"])
-        else:
-            self.combo_list.setCurrentIndex(0)
         self.combo_list.blockSignals(False)
         self.changed.emit(self.index)
 
@@ -478,8 +476,7 @@ class PresetSlotRow(QWidget):
         self._loading = False
 
     def get_data(self) -> tuple[str, str]:
-        char_id = self._selected_char_id()
-        return char_id, self._selected_combo_id() if char_id else ""
+        return self._selected_char_id(), self._selected_combo_id()
 
     def set_editor_enabled(self, enabled: bool) -> None:
         self.char_combo.setEnabled(enabled)
@@ -946,7 +943,9 @@ class TeamManagerTab(CustomTab):
                 continue
             char_info = self.manager.get_character_info_by_id(char_id)
             if char_info:
-                slots[index] = {"char_id": char_id, "impl_id": char_info["impl_id"]}
+                slots[index]["char_id"] = char_id
+                if not slots[index]["impl_id"]:
+                    slots[index]["impl_id"] = char_info["impl_id"]
                 filled_count += 1
         if not filled_count:
             self._show_bar(self.tr("无法填入"), self.tr_fill_failed, success=False)

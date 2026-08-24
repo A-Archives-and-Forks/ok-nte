@@ -4,10 +4,14 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
+from src.char.core.CharFactory import get_char_by_impl_id
 from src.char.core.CharRegistry import CharRegistry, char_registry
+from src.char.custom.CustomChar import CustomChar
 from src.char.custom.CustomCharDb import DB_SCHEMA_VERSION, CustomCharDb
 from src.char.custom.CustomCharDbMigrator import MigrationContext
+from src.char.custom.CustomCharManager import CustomCharManager
 from src.char.Zero import Zero
 
 
@@ -153,6 +157,48 @@ class TestCharImplDb(unittest.TestCase):
         self.assertTrue(database.clear_fixed_team_preset())
         self.assertFalse(database.get_fixed_team()["enabled"])
 
+    def test_presets_allow_an_implementation_without_a_character_record(self):
+        database = CustomCharDb(self.db_path, self.features_dir, self.context)
+        combo_id = database.add_combo("Direct", "skill")
+        preset = database.create_team_preset("Direct implementation")
+
+        self.assertTrue(
+            database.update_team_preset(
+                preset["id"], slots=[{"char_id": "", "impl_id": combo_id}]
+            )
+        )
+        self.assertEqual(
+            database.get_team_presets()[0]["slots"][0], {"char_id": "", "impl_id": combo_id}
+        )
+        self.assertEqual(database.apply_team_preset(preset["id"]), [])
+        self.assertTrue(database.apply_team_preset(preset["id"], fixed=True) is not None)
+        self.assertEqual(database.get_fixed_team()["slots"][0]["impl_id"], combo_id)
+
+        CustomCharDb.reset_instance()
+        reloaded = CustomCharDb(self.db_path, self.features_dir, self.context)
+        self.assertEqual(reloaded.get_fixed_team()["slots"][0], {"char_id": "", "impl_id": combo_id})
+
+    def test_direct_implementation_builds_a_custom_character_without_a_record(self):
+        external_chars_dir = os.path.join(self.temp_dir, "external_chars")
+        with (
+            patch("src.char.custom.CustomCharManager.CUSTOM_CHARS_DIR", self.temp_dir),
+            patch("src.char.custom.CustomCharManager.DB_PATH", self.db_path),
+            patch("src.char.custom.CustomCharManager.FEATURES_DIR", self.features_dir),
+            patch("src.char.custom.CustomCharManager.EXTERNAL_CHARS_DIR", external_chars_dir),
+        ):
+            CustomCharManager._instance = None
+            CustomCharDb.reset_instance()
+            self.addCleanup(setattr, CustomCharManager, "_instance", None)
+            self.addCleanup(CustomCharDb.reset_instance)
+            manager = CustomCharManager()
+            combo_id = manager.add_combo("Direct", "skill")
+
+            char = get_char_by_impl_id(Mock(), index=0, impl_id=combo_id)
+
+        self.assertIsInstance(char, CustomChar)
+        self.assertEqual(char.char_id, "")
+        self.assertEqual(char.impl_id, combo_id)
+
     def test_presets_reject_duplicates_and_clean_deleted_references(self):
         database = CustomCharDb(self.db_path, self.features_dir, self.context)
         combo_id = database.add_combo("A", "skill")
@@ -172,6 +218,23 @@ class TestCharImplDb(unittest.TestCase):
         self.assertEqual(database.get_team_presets()[0]["slots"][0]["impl_id"], "")
         database.delete_character(char_id)
         self.assertEqual(database.get_team_presets()[0]["slots"][0], {"char_id": "", "impl_id": ""})
+
+    def test_deleting_a_character_keeps_an_explicit_slot_implementation(self):
+        database = CustomCharDb(self.db_path, self.features_dir, self.context)
+        combo_id = database.add_combo("Direct", "skill")
+        char_id = database.create_character("A", combo_id)
+        preset = database.create_team_preset("Team")
+        self.assertTrue(
+            database.update_team_preset(
+                preset["id"], slots=[{"char_id": char_id, "impl_id": combo_id}]
+            )
+        )
+
+        database.delete_character(char_id)
+
+        self.assertEqual(
+            database.get_team_presets()[0]["slots"][0], {"char_id": "", "impl_id": combo_id}
+        )
 
     def test_failed_preset_update_does_not_apply_the_name(self):
         database = CustomCharDb(self.db_path, self.features_dir, self.context)
