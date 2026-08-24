@@ -37,6 +37,7 @@ class CopyBuiltinCharTests(unittest.TestCase):
             ),
             patch("src.char.core.CharRegistry.char_registry", self.registry),
             patch("src.ui.CharManagerTab.og.app", app),
+            patch("src.ui.CharManagerTab.char_registry", self.registry),
         ]
         for patcher in self.patchers:
             patcher.start()
@@ -155,13 +156,22 @@ class CopyBuiltinCharTests(unittest.TestCase):
 
         tab.on_combo_changed("[内置代码] 真红", "builtin:shinku")
         self.assertTrue(tab.combo_text.isReadOnly())
+        self.assertFalse(tab.ask_ai_btn.isEnabled())
         self.assertIn("class Shinku(BaseChar):", tab.combo_text.toPlainText())
 
         tab.on_combo_changed("[外置代码] copy_tests - 真红", new_impl_id)
         self.assertFalse(tab.combo_text.isReadOnly())
+        self.assertTrue(tab.ask_ai_btn.isEnabled())
         self.assertIn('cn_name = "真红"', tab.combo_text.toPlainText())
 
         tab._set_combo_selection_by_id(new_impl_id)
+        with patch("src.ui.CharManagerTab.show_info_bar"):
+            tab.on_ask_ai()
+        prompt = self.qt_app.clipboard().text()
+        self.assertIn("```python", prompt)
+        self.assertIn("class Shinku(BaseChar):", prompt)
+        self.assertIn("请修改上面完整的 Shinku 角色自动化代码。", prompt)
+
         tab.combo_text.setPlainText(f"{tab.combo_text.toPlainText()}\n# unsaved")
         with patch("src.ui.CharManagerTab.InfoBar.warning") as warning:
             tab.on_test_combo()
