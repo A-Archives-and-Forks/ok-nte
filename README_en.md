@@ -14,10 +14,10 @@ English | [简体中文](README.md)
   </p>
 
   <p>
-    <a href="https://github.com/BnanZ0/ok-nte/releases">📥 Latest release</a> ·
+    <a href="docs/en/getting-started/installation.md">📥 Latest release</a> ·
     <a href="docs/en/index.md">📖 Documentation</a> ·
     <a href="docs/en/guides/quick-start.md">🚀 Quick start</a> ·
-    <a href="https://github.com/BnanZ0/ok-nte/issues">🛠️ Feedback</a>
+    <a href="docs/en/guides/troubleshooting.md">🛠️ FAQ and feedback</a>
   </p>
 
   <p>

@@ -14,10 +14,10 @@
   </p>
 
   <p>
-    <a href="https://github.com/BnanZ0/ok-nte/releases">📥 下载最新版</a> ·
+    <a href="docs/zh-CN/getting-started/installation.md">📥 下载最新版</a> ·
     <a href="docs/zh-CN/index.md">📖 使用文档</a> ·
     <a href="docs/zh-CN/guides/quick-start.md">🚀 快速上手</a> ·
-    <a href="https://github.com/BnanZ0/ok-nte/issues">🛠️ 问题反馈</a>
+    <a href="docs/zh-CN/guides/troubleshooting.md">🛠️ 常见问题与反馈</a>
   </p>
 
   <p>
@@ -89,7 +89,7 @@ ok-nte 是一款面向《异环》的 Windows 自动化工具，通过截图识�
 
 ## 💬 社区与交流
 
-- **QQ 用户群**: [1105569444](https://qm.qq.com/q/bIiSLoUTVS)
+- **QQ 用户群**: [1108238629](https://qm.qq.com/q/ZJaIaEb5iE)
 - **QQ 开发者群**: `1087276729`
 - **QQ 频道**: [点击加入](https://pd.qq.com/s/djmm6l44y)
 - **Discord**: [https://discord.gg/vVyCatEBgA](https://discord.gg/vVyCatEBgA)
