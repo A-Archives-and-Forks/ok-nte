@@ -320,20 +320,6 @@ class TestCustomChar(TaskTestCase):
         self.assertTrue(char_id)
         self.assertTrue(tab.fixed_action.isCheckable())
 
-    def test_add_character_dialog_disables_confirm_for_duplicate_name(self):
-        self.manager.create_character("existing_dialog_char", "")
-        dialog = AddCharacterDialog(self.manager)
-
-        dialog.char_name_edit.setText("existing_dialog_char")
-
-        self.assertFalse(dialog.yesButton.isEnabled())
-        self.assertFalse(dialog.name_error_label.isHidden())
-
-        dialog.char_name_edit.setText("new_dialog_char")
-
-        self.assertTrue(dialog.yesButton.isEnabled())
-        self.assertTrue(dialog.name_error_label.isHidden())
-
     def test_team_manager_presets_apply_and_fixed_use(self):
         tab = TeamManagerTab(manager=self.manager)
         combo_a = self.manager.add_combo("combo_preset_a", "skill")

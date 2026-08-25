@@ -30,6 +30,8 @@ ok-script also parses ``-t`` as its task argument.
 
 from __future__ import annotations
 
+import os
+import tempfile
 import threading
 
 import ok as _ok
@@ -40,6 +42,10 @@ from ok.ui.qt.Communicate import communicate
 from ok.util.handler import ExitEvent
 
 _ORIGINALS_ATTR = "_ok_nte_runtime_isolation_originals"
+_TEST_CUSTOM_CHARS_ROOT = tempfile.TemporaryDirectory(
+    prefix="ok_nte_test_custom_chars_",
+    ignore_cleanup_errors=True,
+)
 
 _OK_CLASS_STATE_ATTRS = (
     "executor",
@@ -65,8 +71,41 @@ _OK_GLOBAL_STATE_ATTRS = (
 )
 
 
+def _disable_async_preheats_for_tests() -> None:
+    """Avoid background cache workers crossing TaskTestCase boundaries."""
+    from src.char.custom.CustomCharManager import CustomCharManager
+    from src.tasks.mixin.CharUIMixin import CharElementUIMixin
+
+    if not hasattr(CharElementUIMixin, "_ok_nte_original_preheat"):
+        CharElementUIMixin._ok_nte_original_preheat = (
+            CharElementUIMixin.preheat_element_template_cache_async
+        )
+        CharElementUIMixin.preheat_element_template_cache_async = classmethod(
+            lambda _cls: None
+        )
+    if not hasattr(CustomCharManager, "_ok_nte_original_preheat"):
+        CustomCharManager._ok_nte_original_preheat = CustomCharManager.preheat_feature_cache_async
+        CustomCharManager.preheat_feature_cache_async = lambda _self: None
+
+
+def _redirect_custom_char_storage_for_tests() -> None:
+    """Keep TaskTestCase suites away from the user's custom character data."""
+    from src.char.custom import CustomCharDb as custom_char_db_module
+    from src.char.custom import CustomCharManager as manager_module
+
+    root = _TEST_CUSTOM_CHARS_ROOT.name
+    manager_module.CUSTOM_CHARS_DIR = root
+    manager_module.FEATURES_DIR = os.path.join(root, "features")
+    manager_module.DB_PATH = os.path.join(root, "db.json")
+    manager_module.EXTERNAL_CHARS_DIR = os.path.join(root, "external_chars")
+    manager_module.CustomCharManager._instance = None
+    custom_char_db_module.CustomCharDb.reset_instance()
+
+
 def install_ok_test_runtime_isolation() -> None:
     """Patch ok.test helpers so each TaskTestCase class starts from clean state."""
+    _redirect_custom_char_storage_for_tests()
+    _disable_async_preheats_for_tests()
     if not hasattr(_ok_test, _ORIGINALS_ATTR):
         setattr(_ok_test, _ORIGINALS_ATTR, True)
 
@@ -133,10 +172,12 @@ def install_ok_test_runtime_isolation() -> None:
             runtime = _ok_test.ok
             try:
                 if runtime is not None:
+                    runtime.task_executor.stop()
                     runtime.quit()
                     executor_thread = runtime.task_executor.thread
                     if executor_thread and executor_thread is not threading.current_thread():
-                        executor_thread.join(timeout=2.0)
+                        executor_thread.join(timeout=5.0)
+                    runtime.device_manager.close()
                     if runtime._headless_app is not None:
                         try:
                             communicate.quit.disconnect(runtime._headless_app.quit)
