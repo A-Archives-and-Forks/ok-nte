@@ -1314,3 +1314,6 @@ msgstr "{SOURCE}\n\n実現したい内容: \n\n上記の完全な {class_name} �
 
 msgid "OK"
 msgstr "OK"
+
+msgid "设置"
+msgstr "設定"

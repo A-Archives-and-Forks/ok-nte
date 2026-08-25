@@ -1314,3 +1314,6 @@ msgstr "{SOURCE}\n\nQuiero lograr: \n\nModifique el código de automatización c
 
 msgid "OK"
 msgstr "Aceptar"
+
+msgid "设置"
+msgstr "Ajustes"

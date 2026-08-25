@@ -1046,3 +1046,6 @@ msgstr "{SOURCE}\n\nQuero realizar: \n\nModifique o código completo de automaç
 
 msgid "OK"
 msgstr "OK"
+
+msgid "设置"
+msgstr "Configurações"

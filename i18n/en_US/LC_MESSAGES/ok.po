@@ -1314,3 +1314,6 @@ msgstr "{SOURCE}\n\nI want to achieve: \n\nPlease modify the complete {class_nam
 
 msgid "OK"
 msgstr "OK"
+
+msgid "设置"
+msgstr "Settings"

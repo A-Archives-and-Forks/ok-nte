@@ -1314,3 +1314,6 @@ msgstr "{SOURCE}\n\n我想實現: \n\n請修改上面完整的 {class_name} 角�
 
 msgid "OK"
 msgstr "確認"
+
+msgid "设置"
+msgstr "設定"

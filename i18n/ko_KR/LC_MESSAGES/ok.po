@@ -1314,3 +1314,6 @@ msgstr "{SOURCE}\n\n구현하려는 내용: \n\n위의 완전한 {class_name} �
 
 msgid "OK"
 msgstr "확인"
+
+msgid "设置"
+msgstr "설정"

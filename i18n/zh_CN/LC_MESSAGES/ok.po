@@ -1300,3 +1300,6 @@ msgstr ""
 
 msgid "OK"
 msgstr "确认"
+
+msgid "设置"
+msgstr ""
