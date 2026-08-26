@@ -8,14 +8,14 @@ from ok.test.TaskTestCase import TaskTestCase
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
-from src.char.custom.CustomChar import CustomChar
 from src.char.core.CharFactory import get_char_by_impl_id
+from src.char.custom.CustomChar import CustomChar
 from src.char.custom.CustomCharDb import CustomCharDb
 from src.char.custom.CustomCharManager import CustomCharManager
 from src.config import config
 from src.tasks.DebugCharTask import DebugCharTask, TeamScanResult
 from src.ui.CharManagerTab import CharManagerTab
-from src.ui.TeamManagerTab import AddCharacterDialog, TeamManagerTab
+from src.ui.TeamManagerTab import TeamManagerTab
 
 PREDEFINED_CHARACTER_ID = "builtin:zero"
 
