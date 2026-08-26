@@ -173,8 +173,7 @@ class PackageMetadataDialog(MessageBoxBase):
 class PackageImportDialog(MessageBoxBase):
     def __init__(self, package: TeamPackage, archive_name: str, parent=None):
         super().__init__(parent)
-        self._package = package
-        self.viewLayout.setSpacing(10)
+        self.viewLayout.setSpacing(6)
         self.viewLayout.addWidget(SubtitleLabel(package.name, self))
         summary = f"{self.tr('作者')}: {package.author}\n{self.tr('版本')}: {package.version}"
         if package.description:
@@ -182,24 +181,30 @@ class PackageImportDialog(MessageBoxBase):
         self.viewLayout.addWidget(BodyLabel(summary, self))
         members = ", ".join(slot.display["zh_CN"] for slot in package.slots)
         self.viewLayout.addWidget(CaptionLabel(f"{self.tr('成员')}: {members}", self))
+
+        self.viewLayout.addWidget(BodyLabel(self.tr("本地方案名称"), self))
         self.preset_name_edit = LineEdit(self)
-        self.preset_name_edit.setPlaceholderText(self.tr("本地方案名称"))
         self.preset_name_edit.setText(package.name)
+        self.viewLayout.addWidget(self.preset_name_edit)
+
+        self.viewLayout.addWidget(BodyLabel(self.tr("外置代码目录"), self))
         self.directory_edit = LineEdit(self)
-        self.directory_edit.setPlaceholderText(self.tr("外置代码目录"))
         try:
             self.directory_edit.setText(
                 CustomCharManager.validate_external_directory(Path(archive_name).stem.strip())
             )
         except ValueError:
             self.directory_edit.setText("community_team")
+        self.viewLayout.addWidget(self.directory_edit)
+
         self.error_label = CaptionLabel("", self)
-        for widget in (self.preset_name_edit, self.directory_edit, self.error_label):
-            self.viewLayout.addWidget(widget)
+        self.viewLayout.addWidget(self.error_label)
+
         self.preset_name_edit.textChanged.connect(self._validate)
         self.directory_edit.textChanged.connect(self._validate)
-        self.widget.setMinimumWidth(430)
+        self.widget.setMinimumWidth(480)
         self.yesButton.setText(self.tr("导入"))
+        self.cancelButton.setText(self.tr("取消"))
         self._validate()
 
     def _validate(self) -> None:
